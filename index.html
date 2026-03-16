@@ -74,10 +74,10 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'DM San
 #main-col{flex:1;display:flex;flex-direction:column;overflow:hidden;position:relative}
 
 /* ── MODE BAR (top) ── */
-#mode-bar{display:flex;align-items:center;justify-content:center;padding:.75rem 1rem;border-bottom:1px solid var(--border);gap:.5rem;flex-shrink:0}
+#mode-bar{display:flex;align-items:center;justify-content:space-between;padding:.65rem 1.25rem;border-bottom:1px solid var(--border);flex-shrink:0}
 .mode-btn{padding:.3rem .95rem;border:none;border-radius:6px;font-family:'IBM Plex Mono',monospace;font-size:.73rem;letter-spacing:.04em;cursor:pointer;transition:background .15s,color .15s;background:transparent;color:var(--muted)}
 .mode-btn.active{background:var(--accent-dim);color:var(--accent)}
-#mode-bar-title{font-family:'Playfair Display',serif;font-size:.9rem;font-style:italic;color:var(--muted);position:absolute;left:50%;transform:translateX(-50%);pointer-events:none}
+#mode-bar-title{font-family:'Playfair Display',serif;font-size:.9rem;font-style:italic;color:var(--muted);white-space:nowrap}
 #mode-bar .modes{display:flex;gap:3px;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:3px}
 
 /* ── THREAD ── */
@@ -194,15 +194,15 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'DM San
     </div>
     <div id="s2" style="display:none">
       <div class="step-tag">Step 2 of 3 — Web search</div>
-      <h2>Brave Search API</h2>
-      <p class="sub">Results embedded in WonderStart — no redirects. Free: 2,000 searches/month. Skip to use DuckDuckGo redirect.</p>
+      <h2>Serper.dev search</h2>
+      <p class="sub">Real Google results embedded in WonderStart — no redirects. Free: 2,500 searches to start. Works directly from your browser.</p>
       <div class="instructions"><ol>
-        <li>Go to <a href="https://api.search.brave.com/register" target="_blank">api.search.brave.com/register</a></li>
-        <li>Create a free account and verify your email</li>
-        <li><strong style="color:var(--text)">API Keys</strong> → create a key → paste below</li>
+        <li>Go to <a href="https://serper.dev" target="_blank">serper.dev</a> → <strong style="color:var(--text)">Get Started Free</strong></li>
+        <li>Sign up with Google or email — no credit card needed</li>
+        <li>Your API key is on the dashboard — copy and paste below</li>
       </ol></div>
-      <label class="fl">Brave Search API key</label>
-      <input class="fi" type="password" id="s2-brave" placeholder="BSA...">
+      <label class="fl">Serper API key</label>
+      <input class="fi" type="password" id="s2-brave" placeholder="...">
       <div class="er" id="s2-err"></div>
       <button class="bp" onclick="s2Next()">Continue →</button>
       <button class="bg" onclick="s2Skip()">Skip — use DuckDuckGo redirect</button>
@@ -236,8 +236,10 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'DM San
     <p class="sub" style="margin-bottom:1.25rem">Update your API keys or sync configuration.</p>
     <label class="fl">Gemini API key</label>
     <input class="fi" type="password" id="cfg-gemini" placeholder="AIzaSy...">
-    <label class="fl">Brave Search key (blank = DuckDuckGo redirect)</label>
-    <input class="fi" type="password" id="cfg-brave" placeholder="BSA...">
+    <label class="fl">Google Search API key (blank = DuckDuckGo redirect)</label>
+    <input class="fi" type="password" id="cfg-gkey" placeholder="AIzaSy...">
+    <label class="fl">Search engine ID / cx</label>
+    <input class="fi" type="text" id="cfg-cx" placeholder="a1b2c3d4e5...">
     <label class="fl">Firebase config JSON (blank = local only)</label>
     <input class="fi" type="text" id="cfg-fb" placeholder='{"apiKey":"..."}'>
     <div class="er" id="cfg-err"></div>
@@ -336,7 +338,7 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'DM San
 <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore-compat.js"></script>
 <script>
-let mode='ai', geminiKey='', braveKey='', fbConfigObj=null;
+let mode='ai', geminiKey='', gSearchKey='', gSearchCx='', fbConfigObj=null;
 let streaming=false, currentChatId=null, currentMessages=[], allChats=[];
 let db=null, fbAuth=null, currentUser=null, fbReady=false;
 let pendingImages=[]; // [{base64, mimeType, previewUrl, name}]
@@ -344,7 +346,8 @@ let pendingImages=[]; // [{base64, mimeType, previewUrl, name}]
 // ── BOOT ──────────────────────────────────────────────────
 (function boot(){
   geminiKey=localStorage.getItem('ws_gemini')||'';
-  braveKey=localStorage.getItem('ws_brave')||'';
+  gSearchKey=localStorage.getItem('ws_gkey')||'';
+  gSearchCx=localStorage.getItem('ws_gcx')||'';
   const fbStr=localStorage.getItem('ws_fb');
   if(fbStr){try{fbConfigObj=JSON.parse(fbStr);}catch{}}
   if(!geminiKey){showSetup(1);return;}
@@ -643,24 +646,41 @@ function submit(){
   askGemini(text,imgs);
 }
 
-// ── BRAVE SEARCH ──────────────────────────────────────────
+// ── SERPER SEARCH ─────────────────────────────────────────
 async function doSearch(query){
   if(!query)return;
   if(!braveKey){
-    addSearchBlock(query,null,'No Brave Search key — <button class="link" onclick="openSettings()">add one in Settings</button>');
+    addSearchBlock(query,null,'No search key — <button class="link" onclick="openSettings()">add one in Settings</button>');
     return;
   }
+  const isBrave=braveKey.startsWith('BSA');
   try{
-    const res=await fetch(
-      `https://api.search.brave.com/res/v1/web/search?q=${encodeURIComponent(query)}&count=10`,
-      {headers:{'Accept':'application/json','Accept-Encoding':'gzip','X-Subscription-Token':braveKey}}
-    );
-    if(!res.ok){
-      const msg=res.status===401?'Invalid Brave API key — update in Settings.':`Brave API error ${res.status}`;
-      addSearchBlock(query,null,msg);return;
+    let results;
+    if(isBrave){
+      const target='https://api.search.brave.com/res/v1/web/search?q='+encodeURIComponent(query)+'&count=10';
+      const res=await fetch('https://corsproxy.io/?url='+encodeURIComponent(target),{
+        headers:{'X-Subscription-Token':braveKey,'Accept':'application/json'}
+      });
+      if(!res.ok){
+        const msg=res.status===401?'Invalid Brave API key — update in Settings.':`Brave API error ${res.status}`;
+        addSearchBlock(query,null,msg);return;
+      }
+      const data=await res.json();
+      results=(data?.web?.results||[]).map(r=>({title:r.title,url:r.url,description:r.description}));
+    }else{
+      const res=await fetch('https://google.serper.dev/search',{
+        method:'POST',
+        headers:{'X-API-KEY':braveKey,'Content-Type':'application/json'},
+        body:JSON.stringify({q:query,num:10})
+      });
+      if(!res.ok){
+        const msg=res.status===401?'Invalid Serper API key — update in Settings.':`Search API error ${res.status}`;
+        addSearchBlock(query,null,msg);return;
+      }
+      const data=await res.json();
+      results=(data?.organic||[]).map(r=>({title:r.title,url:r.link,description:r.snippet}));
     }
-    const data=await res.json();
-    addSearchBlock(query,data?.web?.results||[],null);
+    addSearchBlock(query,results,null);
   }catch(e){addSearchBlock(query,null,'Network error: '+e.message);}
 }
 
@@ -677,7 +697,7 @@ async function askGemini(userText, images){
   currentMessages.push({role:'user',parts});
 
   const bubbleId=addAssistantBubble();
-  const url=`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-04-17:streamGenerateContent?key=${geminiKey}&alt=sse`;
+  const url=`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:streamGenerateContent?key=${geminiKey}&alt=sse`;
   const body={contents:currentMessages,generationConfig:{temperature:0.7,maxOutputTokens:2000}};
 
   try{
