@@ -348,6 +348,7 @@ let pendingImages=[]; // [{base64, mimeType, previewUrl, name}]
   const fbStr=localStorage.getItem('ws_fb');
   if(fbStr){try{fbConfigObj=JSON.parse(fbStr);}catch{}}
   if(!geminiKey){showSetup(1);return;}
+  initScrollListener();
   if(fbConfigObj){initFirebase();}else{loadLocal();showMain();}
 })();
 
@@ -355,7 +356,7 @@ function showSetup(n){
   document.getElementById('setup-overlay').classList.remove('hidden');
   [1,2,3].forEach(i=>document.getElementById('s'+i).style.display=i===n?'':'none');
 }
-function showMain(){document.getElementById('setup-overlay').classList.add('hidden');document.getElementById('query').focus();}
+function showMain(){document.getElementById('setup-overlay').classList.add('hidden');document.getElementById('query').focus();initScrollListener();}
 
 // ── SETUP ─────────────────────────────────────────────────
 function s1Next(){
@@ -547,7 +548,7 @@ function addUserBubble(text, images){
   if(images&&images.length) inner+=images.map(img=>`<img class="msg-img" src="${img.previewUrl}" alt="">`).join('');
   if(text) inner+=`<div>${escH(text)}</div>`;
   thread.innerHTML+=`<div class="msg user"><div class="bubble">${inner}</div></div>`;
-  scrollToLastUserMsg();
+  scrollToNewMessage();
 }
 
 function addAssistantBubble(){
@@ -562,6 +563,7 @@ function updateAssistantBubble(id, text, done){
   const el=document.getElementById(id);
   if(!el)return;
   el.querySelector('.bubble').innerHTML=mdLite(text)+(done?'':'<span class="cursor-blink"></span>');
+  followScroll();
 }
 
 function addSearchBlock(query, results, error){
@@ -589,18 +591,36 @@ function addSearchBlock(query, results, error){
       </div>`).join('')}</div>`;
   }
   thread.innerHTML+=`<div class="search-result-block">${inner}</div>`;
-  scrollToLastUserMsg();
+  scrollToNewMessage();
 }
 
 function hideEmpty(){document.getElementById('empty')&&document.getElementById('empty').remove();}
-function scrollToLastUserMsg(){
-  // Scroll thread so the last user bubble is near the top of the viewport
+let userScrolledUp=false;
+
+function initScrollListener(){
+  const t=document.getElementById('thread');
+  t.addEventListener('scroll',()=>{
+    const nearBottom=t.scrollHeight-t.scrollTop-t.clientHeight<80;
+    if(!nearBottom) userScrolledUp=true;
+    else userScrolledUp=false;
+  },{passive:true});
+}
+
+function scrollToNewMessage(){
+  // Scroll so the last user message sits at top of thread viewport
   const t=document.getElementById('thread');
   const userMsgs=t.querySelectorAll('.msg.user');
-  if(!userMsgs.length)return;
+  if(!userMsgs.length){t.scrollTop=t.scrollHeight;return;}
   const last=userMsgs[userMsgs.length-1];
-  const offset=last.offsetTop-16; // 16px breathing room above
-  t.scrollTop=offset;
+  t.scrollTop=last.offsetTop-16;
+  userScrolledUp=false; // reset — user just sent, follow again
+}
+
+function followScroll(){
+  // During streaming: keep scrolling only if user hasn't scrolled up
+  if(userScrolledUp)return;
+  const t=document.getElementById('thread');
+  t.scrollTop=t.scrollHeight;
 }
 
 // ── IMAGE ATTACHMENTS ─────────────────────────────────────
@@ -684,13 +704,13 @@ async function askGemini(userText, images){
   currentMessages.push({role:'user',parts});
 
   const bubbleId=addAssistantBubble();
-  const url=`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:streamGenerateContent?key=${geminiKey}&alt=sse`;
+  const url=`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-pro:streamGenerateContent?key=${geminiKey}&alt=sse`;
   const today=new Date().toLocaleDateString('en-GB',{weekday:'long',year:'numeric',month:'long',day:'numeric'});
   const body={
     system_instruction:{parts:[{text:`You are a helpful AI assistant embedded in WonderStart, a personal browser start page. Today's date is ${today}. Always use this date when asked about the current date or time. You have access to Google Search — use it to answer questions about current events, recent releases, prices, news, and anything that may have changed recently. Be concise and direct. When the user asks you to generate, create, or show an image, respond with a markdown image tag like: ![detailed description of the image](image) — describe the image in detail in the alt text as it will be used to generate the image.`}]},
     contents:currentMessages,
     tools:[{google_search:{}}],
-    generationConfig:{temperature:1,maxOutputTokens:8000,thinkingConfig:{thinkingBudget:8000}}
+    generationConfig:{temperature:1,maxOutputTokens:8000}
   };
 
   try{
