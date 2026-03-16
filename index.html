@@ -342,15 +342,15 @@ let db=null, fbAuth=null, currentUser=null, fbReady=false;
 let pendingImages=[]; // [{base64, mimeType, previewUrl, name}]
 
 // ── BOOT ──────────────────────────────────────────────────
-(function boot(){
-  aiKey=localStorage.getItem('ws_ai')||localStorage.getItem('ws_gemini')||''; // support old key name
+window.addEventListener('load',function boot(){
+  aiKey=localStorage.getItem('ws_ai')||localStorage.getItem('ws_gemini')||'';
   braveKey=localStorage.getItem('ws_brave')||'';
   const fbStr=localStorage.getItem('ws_fb');
   if(fbStr){try{fbConfigObj=JSON.parse(fbStr);}catch{}}
   if(!aiKey){showSetup(1);return;}
   initScrollListener();
   if(fbConfigObj){initFirebase();}else{loadLocal();showMain();}
-})();
+});
 
 function showSetup(n){
   document.getElementById('setup-overlay').classList.remove('hidden');
@@ -380,8 +380,12 @@ function s3Save(){
   e.textContent='';initFirebase();showMain();
 }
 function s3Skip(){loadLocal();showMain();}
-document.getElementById('s1-key').addEventListener('keydown',e=>{if(e.key==='Enter')s1Next();});
-document.getElementById('s2-brave').addEventListener('keydown',e=>{if(e.key==='Enter')s2Next();});
+document.addEventListener('DOMContentLoaded',()=>{
+  const k1=document.getElementById('s1-key');
+  const k2=document.getElementById('s2-brave');
+  if(k1)k1.addEventListener('keydown',e=>{if(e.key==='Enter')s1Next();});
+  if(k2)k2.addEventListener('keydown',e=>{if(e.key==='Enter')s2Next();});
+});
 
 // ── FIREBASE ──────────────────────────────────────────────
 function initFirebase(){
@@ -599,6 +603,7 @@ let userScrolledUp=false;
 
 function initScrollListener(){
   const t=document.getElementById('thread');
+  if(!t)return;
   t.addEventListener('scroll',()=>{
     const nearBottom=t.scrollHeight-t.scrollTop-t.clientHeight<80;
     if(!nearBottom) userScrolledUp=true;
