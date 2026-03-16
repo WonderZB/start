@@ -630,30 +630,13 @@ function followScroll(){
   t.scrollTop=t.scrollHeight;
 }
 
-async function loadPollinationsImages(){
-  const phs=document.querySelectorAll('.pollinate-ph[data-desc]');
-  for(const ph of phs){
-    const desc=ph.dataset.desc;
-    const seed=ph.dataset.seed||Math.floor(Math.random()*99999);
-    const url='https://image.pollinations.ai/prompt/'+encodeURIComponent(desc)+'?nologo=true&seed='+seed;
-    ph.removeAttribute('data-desc'); // prevent double-loading
-    (async()=>{
-      try{
-        const res=await fetch(url);
-        if(!res.ok||!res.headers.get('content-type')?.startsWith('image/'))throw new Error('bad response');
-        const blob=await res.blob();
-        const objUrl=URL.createObjectURL(blob);
-        const img=document.createElement('img');
-        img.src=objUrl;
-        img.style.cssText='max-width:100%;border-radius:12px;display:block';
-        ph.replaceWith(img);
-        followScroll();
-      }catch(e){
-        ph.textContent='Image unavailable — try asking again';
-        ph.style.height='auto';ph.style.padding='1rem';
-      }
-    })();
-  }
+function loadPollinationsImages(){
+  document.querySelectorAll('img[data-src]').forEach(img=>{
+    img.onerror=()=>{img.style.display='none';};
+    img.onload=()=>{img.style.minHeight='';followScroll();};
+    img.src=img.dataset.src;
+    img.removeAttribute('data-src');
+  });
 }
 
 // ── IMAGE ATTACHMENTS ─────────────────────────────────────
@@ -889,7 +872,8 @@ function mdLite(t){
     const seed=Math.floor(Math.random()*99999);
     const cap=desc.length>70?desc.substring(0,70)+'\u2026':desc;
     const safeDesc=desc.replace(/"/g,'&quot;');
-    return `<div class="pollinate-wrap" style="margin:.75rem 0"><div class="pollinate-ph" data-desc="${safeDesc}" data-seed="${seed}" style="background:var(--surface2);border-radius:12px;height:180px;display:flex;align-items:center;justify-content:center;font-size:.8rem;color:var(--muted)">Generating image…</div><div style="font-size:.72rem;color:var(--muted);margin-top:.35rem;font-family:IBM Plex Mono,monospace">${cap} \u00b7 via pollinations.ai</div></div>`;
+    const src='https://image.pollinations.ai/prompt/'+encodeURIComponent(desc)+'?nologo=true&seed='+seed;
+    return `<div style="margin:.75rem 0"><img data-src="${src}" alt="${safeDesc}" style="max-width:100%;border-radius:12px;display:block;min-height:160px;background:var(--surface2)"><div style="font-size:.72rem;color:var(--muted);margin-top:.35rem;font-family:IBM Plex Mono,monospace">${cap} \u00b7 via pollinations.ai</div></div>`;
   });
   // Rest of markdown
   return t
