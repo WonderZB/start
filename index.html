@@ -536,7 +536,7 @@ async function askGemini(userText){
   currentMessages.push({role:'user',parts:[{text:userText}]});
   hideSearch();showResponse('',true);
 
-  const url=`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-04-17:streamGenerateContent?key=${geminiKey}&alt=sse`;
+  const url=`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:streamGenerateContent?key=${geminiKey}&alt=sse`;
   const body={contents:currentMessages,generationConfig:{temperature:0.7,maxOutputTokens:1800}};
 
   try{
