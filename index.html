@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Wonderstart</title>
+<title>WonderStart</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital@0;1&family=IBM+Plex+Mono:wght@400;500&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
 <style>
@@ -15,10 +15,9 @@
 }
 html,body{height:100%;background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;font-size:15px;line-height:1.6;-webkit-font-smoothing:antialiased}
 
-/* ── OVERLAYS ── */
-.overlay{position:fixed;inset:0;background:rgba(0,0,0,0.7);display:flex;align-items:center;justify-content:center;z-index:300;padding:1.5rem}
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,0.7);display:flex;align-items:center;justify-content:center;z-index:300;padding:1.5rem;overflow-y:auto}
 .overlay.hidden{display:none}
-.panel{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:2.5rem 2rem;width:100%;max-width:460px}
+.panel{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:2.5rem 2rem;width:100%;max-width:460px;margin:auto}
 .panel h2{font-family:'Playfair Display',serif;font-size:1.4rem;margin-bottom:0.35rem}
 .panel .sub{font-size:0.85rem;color:var(--muted);margin-bottom:1.5rem;line-height:1.6}
 .panel a{color:var(--accent);text-decoration:none}.panel a:hover{text-decoration:underline}
@@ -34,33 +33,27 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'DM San
 .btn-primary:hover{opacity:.85}
 .btn-ghost{width:100%;padding:.65rem;background:transparent;color:var(--muted);font-family:'DM Sans',sans-serif;font-size:.85rem;border:1px solid var(--border);border-radius:var(--radius);cursor:pointer;margin-top:.6rem;transition:color .15s,border-color .15s}
 .btn-ghost:hover{color:var(--text);border-color:var(--muted)}
-.divider{display:flex;align-items:center;gap:.75rem;margin:.75rem 0;color:var(--muted);font-size:.75rem}.divider::before,.divider::after{content:'';flex:1;height:1px;background:var(--border)}
 
-/* ── APP SHELL ── */
 #app{display:flex;height:100vh;overflow:hidden}
 
-/* ── SIDEBAR ── */
 #sidebar{width:var(--sw);flex-shrink:0;background:var(--surface);border-right:1px solid var(--border);display:flex;flex-direction:column;height:100vh;transition:transform .25s ease;z-index:100}
-#sb-top{padding:.85rem;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:.5rem}
-#new-chat-btn{flex:1;padding:.55rem .9rem;background:var(--accent-dim);color:var(--accent);border:1px solid rgba(201,146,42,.25);border-radius:8px;font-family:'IBM Plex Mono',monospace;font-size:.75rem;cursor:pointer;text-align:left;transition:background .15s;white-space:nowrap}
+#sb-top{padding:.85rem;border-bottom:1px solid var(--border)}
+#new-chat-btn{width:100%;padding:.55rem .9rem;background:var(--accent-dim);color:var(--accent);border:1px solid rgba(201,146,42,.25);border-radius:8px;font-family:'IBM Plex Mono',monospace;font-size:.75rem;cursor:pointer;text-align:left;transition:background .15s}
 #new-chat-btn:hover{background:rgba(201,146,42,.2)}
-#sb-search-btn{width:30px;height:30px;border-radius:7px;background:transparent;border:1px solid var(--border);cursor:pointer;display:flex;align-items:center;justify-content:center;color:var(--muted);flex-shrink:0;transition:border-color .15s,color .15s}
-#sb-search-btn:hover{border-color:var(--muted);color:var(--text)}
 #chat-list{flex:1;overflow-y:auto;padding:.6rem .45rem}
 #chat-list::-webkit-scrollbar{width:3px}
 #chat-list::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px}
 .group-label{font-size:.67rem;font-family:'IBM Plex Mono',monospace;color:var(--muted);letter-spacing:.07em;text-transform:uppercase;padding:.5rem .5rem .2rem;margin-top:.35rem}
-.chat-item{display:flex;align-items:center;gap:5px;padding:.45rem .55rem;border-radius:7px;cursor:pointer;transition:background .12s;position:relative}
+.chat-item{display:flex;align-items:center;gap:5px;padding:.45rem .55rem;border-radius:7px;cursor:pointer;transition:background .12s}
 .chat-item:hover{background:var(--surface2)}
 .chat-item.active{background:var(--accent-dim)}
 .chat-title{flex:1;font-size:.81rem;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
 .chat-item.active .chat-title{color:var(--accent)}
-.chat-del{display:none;width:18px;height:18px;border:none;background:transparent;color:var(--muted);cursor:pointer;border-radius:4px;font-size:15px;line-height:1;align-items:center;justify-content:center;flex-shrink:0;padding:0;transition:color .12s}
+.chat-del{display:none;width:18px;height:18px;border:none;background:transparent;color:var(--muted);cursor:pointer;border-radius:4px;font-size:15px;line-height:1;align-items:center;justify-content:center;flex-shrink:0;padding:0}
 .chat-item:hover .chat-del{display:flex}
 .chat-del:hover{color:var(--red)}
 .empty-state{padding:2rem .5rem;font-size:.8rem;color:var(--muted);text-align:center;line-height:1.8}
 
-/* SIDEBAR FOOTER */
 #sb-footer{border-top:1px solid var(--border);padding:.7rem;display:flex;flex-direction:column;gap:.45rem}
 #user-area{display:flex;align-items:center;gap:8px;padding:.4rem .5rem;border-radius:7px;cursor:pointer;transition:background .12s;min-height:38px}
 #user-area:hover{background:var(--surface2)}
@@ -78,13 +71,10 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'DM San
 .clear-opt{display:block;width:100%;padding:.4rem .6rem;background:transparent;border:none;border-radius:5px;font-size:.79rem;color:var(--muted);cursor:pointer;text-align:left;transition:background .1s,color .1s}
 .clear-opt:hover{background:var(--border);color:var(--red)}
 
-/* ── MAIN AREA ── */
-#main-wrap{flex:1;display:flex;flex-direction:column;align-items:center;overflow-y:auto;padding:0 1rem 4rem;position:relative}
+#main-wrap{flex:1;display:flex;flex-direction:column;align-items:center;overflow-y:auto;padding:0 1rem 4rem}
 #main{width:100%;max-width:680px;display:flex;flex-direction:column;align-items:center;padding-top:min(14vh,120px)}
 
-/* MOBILE SIDEBAR */
-#sb-toggle{display:none;position:fixed;top:.9rem;left:.9rem;width:36px;height:36px;border-radius:8px;background:var(--surface);border:1px solid var(--border);cursor:pointer;align-items:center;justify-content:center;z-index:200;color:var(--muted);transition:border-color .15s}
-#sb-toggle:hover{border-color:var(--muted)}
+#sb-toggle{display:none;position:fixed;top:.9rem;left:.9rem;width:36px;height:36px;border-radius:8px;background:var(--surface);border:1px solid var(--border);cursor:pointer;align-items:center;justify-content:center;z-index:200;color:var(--muted)}
 #sb-backdrop{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:99}
 @media(max-width:768px){
   #sidebar{position:fixed;left:0;top:0;transform:translateX(-100%)}
@@ -94,27 +84,23 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'DM San
   #main{padding-top:min(12vh,80px)}
 }
 
-/* WORDMARK */
 .wordmark{font-family:'Playfair Display',serif;font-size:1rem;font-style:italic;color:var(--muted);margin-bottom:2.5rem;cursor:pointer;user-select:none;transition:color .15s}
 .wordmark:hover{color:var(--accent)}
 
-/* MODE TOGGLE */
 .mode-toggle{display:flex;gap:4px;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:3px;margin-bottom:1.25rem}
 .mode-btn{padding:.33rem 1rem;border:none;border-radius:6px;font-family:'IBM Plex Mono',monospace;font-size:.74rem;letter-spacing:.04em;cursor:pointer;transition:background .15s,color .15s;background:transparent;color:var(--muted)}
 .mode-btn.active{background:var(--accent-dim);color:var(--accent)}
 
-/* SEARCH BOX */
 .search-wrap{width:100%;position:relative;margin-bottom:1rem}
 #query{width:100%;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:1rem 3.5rem 1rem 1.25rem;font-family:'DM Sans',sans-serif;font-size:1rem;font-weight:300;color:var(--text);outline:none;resize:none;min-height:56px;max-height:240px;overflow-y:auto;transition:border-color .15s;line-height:1.5}
 #query::placeholder{color:var(--muted)}
 #query:focus{border-color:rgba(201,146,42,.4)}
-#submit-btn{position:absolute;right:.75rem;bottom:.75rem;width:32px;height:32px;border-radius:7px;background:var(--accent);border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:opacity .15s,transform .1s;flex-shrink:0}
+#submit-btn{position:absolute;right:.75rem;bottom:.75rem;width:32px;height:32px;border-radius:7px;background:var(--accent);border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:opacity .15s,transform .1s}
 #submit-btn:hover{opacity:.85}
 #submit-btn:active{transform:scale(.95)}
 .hint{font-size:.74rem;color:var(--muted);text-align:center}
 .hint kbd{font-family:'IBM Plex Mono',monospace;font-size:.68rem;background:var(--surface);border:1px solid var(--border);border-radius:4px;padding:1px 5px}
 
-/* RESPONSE */
 #response-wrap{width:100%;margin-top:2rem;opacity:0;transform:translateY(8px);transition:opacity .3s,transform .3s}
 #response-wrap.visible{opacity:1;transform:translateY(0)}
 .response-card{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:1.5rem 1.75rem}
@@ -129,11 +115,26 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'DM San
 .act-btn:hover{color:var(--text);border-color:var(--muted)}
 .context-note{font-size:.75rem;color:var(--muted);font-family:'IBM Plex Mono',monospace;margin-bottom:.75rem}
 
-/* SETTINGS BTN */
-#settings-btn{position:fixed;bottom:1.25rem;right:1.25rem;width:36px;height:36px;border-radius:50%;background:var(--surface);border:1px solid var(--border);cursor:pointer;display:flex;align-items:center;justify-content:center;z-index:10;transition:border-color .15s;color:var(--muted)}
+#search-wrap{width:100%;margin-top:1.5rem;display:none}
+.search-meta{display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem;flex-wrap:wrap;gap:.5rem}
+.search-meta-label{font-family:'IBM Plex Mono',monospace;font-size:.69rem;color:var(--accent);letter-spacing:.08em;text-transform:uppercase}
+.search-meta-right{display:flex;gap:.5rem;align-items:center}
+.open-ddg{font-size:.72rem;font-family:'IBM Plex Mono',monospace;color:var(--muted);background:transparent;border:1px solid var(--border);border-radius:6px;padding:.28rem .65rem;cursor:pointer;text-decoration:none;transition:color .15s,border-color .15s;display:inline-block}
+.open-ddg:hover{color:var(--text);border-color:var(--muted)}
+.results-list{display:flex;flex-direction:column;gap:.75rem}
+.result-item{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:1rem 1.25rem;cursor:pointer;transition:border-color .15s}
+.result-item:hover{border-color:rgba(201,146,42,.35)}
+.result-url{font-family:'IBM Plex Mono',monospace;font-size:.68rem;color:var(--muted);margin-bottom:.3rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.result-title{font-size:.92rem;font-weight:500;color:var(--text);margin-bottom:.35rem;line-height:1.4}
+.result-item:hover .result-title{color:var(--accent)}
+.result-desc{font-size:.82rem;color:var(--muted);line-height:1.55}
+.search-msg{padding:1.25rem;background:var(--surface);border:1px solid var(--border);border-radius:12px;font-size:.83rem;color:var(--muted);line-height:1.7;text-align:center}
+.search-msg a,.search-msg button[data-link]{color:var(--accent);text-decoration:none;background:transparent;border:none;cursor:pointer;font-size:.83rem;padding:0}
+.search-msg a:hover,.search-msg button[data-link]:hover{text-decoration:underline}
+
+#settings-btn{position:fixed;bottom:1.25rem;right:1.25rem;width:36px;height:36px;border-radius:50%;background:var(--surface);border:1px solid var(--border);cursor:pointer;display:flex;align-items:center;justify-content:center;z-index:10;color:var(--muted);transition:border-color .15s}
 #settings-btn:hover{border-color:var(--muted)}
 
-/* MARKDOWN */
 .md-h1,.md-h2,.md-h3{font-family:'Playfair Display',serif;color:var(--text);margin:1.2em 0 .4em}
 .md-h1{font-size:1.25rem}.md-h2{font-size:1.1rem}.md-h3{font-size:1rem}
 .md-li{margin-left:1.2em;margin-bottom:.2em}
@@ -142,91 +143,89 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'DM San
 </head>
 <body>
 
-<!-- ══ SETUP OVERLAY ══ -->
+<!-- SETUP -->
 <div class="overlay" id="setup-overlay">
-  <div class="panel" id="setup-panel">
-    <!-- Step 1: Gemini key -->
+  <div class="panel">
     <div id="s1">
-      <div class="step-tag">Step 1 of 2 — AI engine</div>
+      <div class="step-tag">Step 1 of 3 — AI engine</div>
       <h2>Get your Gemini key</h2>
       <p class="sub">Free tier: 1,500 requests/day. No credit card needed.</p>
-      <div class="instructions">
-        <ol>
-          <li>Go to <a href="https://aistudio.google.com/apikey" target="_blank">aistudio.google.com/apikey</a></li>
-          <li>Click <strong style="color:var(--text)">Get API key → Create API key</strong></li>
-          <li>Copy the key (starts with <code>AIza</code>) and paste below</li>
-        </ol>
-      </div>
-      <label class="field-label" for="s1-key">Gemini API key</label>
+      <div class="instructions"><ol>
+        <li>Go to <a href="https://aistudio.google.com/apikey" target="_blank">aistudio.google.com/apikey</a></li>
+        <li>Click <strong style="color:var(--text)">Get API key → Create API key</strong></li>
+        <li>Copy the key (starts with <code>AIza</code>) and paste below</li>
+      </ol></div>
+      <label class="field-label">Gemini API key</label>
       <input class="field-input" type="password" id="s1-key" placeholder="AIzaSy...">
       <div class="err" id="s1-err"></div>
       <button class="btn-primary" onclick="s1Next()">Continue →</button>
     </div>
-
-    <!-- Step 2: Firebase -->
     <div id="s2" style="display:none">
-      <div class="step-tag">Step 2 of 2 — Cross-device sync (optional)</div>
-      <h2>Connect Google sync</h2>
-      <p class="sub">Uses Firebase (free, by Google) to sync your history across all your devices. Skip to use local storage only.</p>
-      <div class="instructions">
-        <ol>
-          <li>Go to <a href="https://console.firebase.google.com" target="_blank">console.firebase.google.com</a> → <strong style="color:var(--text)">Add project</strong></li>
-          <li><strong style="color:var(--text)">Authentication</strong> → Get started → Enable <strong style="color:var(--text)">Google</strong></li>
-          <li>Add your GitHub Pages domain under <strong style="color:var(--text)">Authorized domains</strong><br><span style="color:var(--accent);font-size:.78rem">e.g. wonderzb.github.io</span></li>
-          <li><strong style="color:var(--text)">Firestore Database</strong> → Create database → Start in <strong style="color:var(--text)">Production mode</strong></li>
-          <li>In Firestore → <strong style="color:var(--text)">Rules</strong>, paste:<br>
-            <code>match /users/{uid}/{d=**} {<br>&nbsp;&nbsp;allow read,write: if request.auth.uid==uid;<br>}</code>
-          </li>
-          <li>⚙ <strong style="color:var(--text)">Project settings</strong> → scroll to <strong style="color:var(--text)">Your apps → Web app</strong> → register → copy the <code>firebaseConfig</code> object and paste it below</li>
-        </ol>
-      </div>
-      <label class="field-label" for="s2-cfg">Firebase config (JSON)</label>
-      <input class="field-input" type="text" id="s2-cfg" placeholder='{"apiKey":"...","authDomain":"...","projectId":"..."}'>
+      <div class="step-tag">Step 2 of 3 — Web search</div>
+      <h2>Brave Search API</h2>
+      <p class="sub">Shows real search results embedded in WonderStart — no redirects. Free: 2,000 searches/month. Skip to use DuckDuckGo redirect instead.</p>
+      <div class="instructions"><ol>
+        <li>Go to <a href="https://api.search.brave.com/register" target="_blank">api.search.brave.com/register</a></li>
+        <li>Create a free account and verify your email</li>
+        <li>Go to <strong style="color:var(--text)">API Keys</strong> → create a key</li>
+        <li>Paste the key below</li>
+      </ol></div>
+      <label class="field-label">Brave Search API key</label>
+      <input class="field-input" type="password" id="s2-brave" placeholder="BSA...">
       <div class="err" id="s2-err"></div>
-      <button class="btn-primary" onclick="s2Save()">Save &amp; start →</button>
-      <button class="btn-ghost" onclick="s2Skip()">Skip — use local storage only</button>
+      <button class="btn-primary" onclick="s2Next()">Continue →</button>
+      <button class="btn-ghost" onclick="s2Skip()">Skip — use DuckDuckGo redirect</button>
+    </div>
+    <div id="s3" style="display:none">
+      <div class="step-tag">Step 3 of 3 — Cross-device sync</div>
+      <h2>Connect Google sync</h2>
+      <p class="sub">Uses Firebase (free, by Google) to sync history across all your devices. Skip to use local storage only.</p>
+      <div class="instructions"><ol>
+        <li>Go to <a href="https://console.firebase.google.com" target="_blank">console.firebase.google.com</a> → <strong style="color:var(--text)">Add project</strong></li>
+        <li><strong style="color:var(--text)">Authentication</strong> → Get started → Enable <strong style="color:var(--text)">Google</strong></li>
+        <li>Add your GitHub Pages domain under <strong style="color:var(--text)">Authorized domains</strong></li>
+        <li><strong style="color:var(--text)">Firestore Database</strong> → Create database → Production mode</li>
+        <li>Firestore → <strong style="color:var(--text)">Rules</strong> → replace all with:<br>
+          <code>rules_version = '2';<br>service cloud.firestore {<br>&nbsp;match /databases/{database}/documents {<br>&nbsp;&nbsp;match /users/{uid}/{d=**} {<br>&nbsp;&nbsp;&nbsp;allow read,write: if request.auth.uid==uid;<br>&nbsp;&nbsp;}<br>&nbsp;}<br>}</code>
+        </li>
+        <li>⚙ <strong style="color:var(--text)">Project settings → Web app</strong> → register → copy the config JSON</li>
+      </ol></div>
+      <label class="field-label">Firebase config (JSON)</label>
+      <input class="field-input" type="text" id="s3-cfg" placeholder='{"apiKey":"...","authDomain":"...","projectId":"..."}'>
+      <div class="err" id="s3-err"></div>
+      <button class="btn-primary" onclick="s3Save()">Save &amp; start →</button>
+      <button class="btn-ghost" onclick="s3Skip()">Skip — local storage only</button>
     </div>
   </div>
 </div>
 
-<!-- ══ SETTINGS OVERLAY ══ -->
+<!-- SETTINGS -->
 <div class="overlay hidden" id="settings-overlay">
   <div class="panel">
     <h2 style="margin-bottom:.3rem">Settings</h2>
-    <p class="sub" style="margin-bottom:1.25rem">Update your keys or manage sync.</p>
-
-    <label class="field-label" for="cfg-gemini">Gemini API key</label>
+    <p class="sub" style="margin-bottom:1.25rem">Update your API keys or sync configuration.</p>
+    <label class="field-label">Gemini API key</label>
     <input class="field-input" type="password" id="cfg-gemini" placeholder="AIzaSy...">
-
-    <label class="field-label" for="cfg-fb">Firebase config (JSON) — leave blank for local only</label>
+    <label class="field-label">Brave Search key (blank = use DuckDuckGo redirect)</label>
+    <input class="field-input" type="password" id="cfg-brave" placeholder="BSA...">
+    <label class="field-label">Firebase config JSON (blank = local only)</label>
     <input class="field-input" type="text" id="cfg-fb" placeholder='{"apiKey":"..."}'>
-
     <div class="err" id="cfg-err"></div>
     <button class="btn-primary" onclick="saveSettings()">Save changes</button>
     <button class="btn-ghost" onclick="closeSettings()">Cancel</button>
   </div>
 </div>
 
-<!-- ══ APP ══ -->
+<!-- APP -->
 <div id="app">
-
-  <!-- SIDEBAR -->
   <div id="sidebar">
-    <div id="sb-top">
-      <button id="new-chat-btn" onclick="newChat()">✦ New chat</button>
-    </div>
-
+    <div id="sb-top"><button id="new-chat-btn" onclick="newChat()">✦ New chat</button></div>
     <div id="chat-list"><div class="empty-state">No chats yet.<br>Ask something to get started.</div></div>
-
     <div id="sb-footer">
       <div id="user-area" onclick="handleUserClick()">
         <div id="user-av">?</div>
-        <div id="user-info">
-          <div id="user-name">Not signed in</div>
-          <div id="user-sub">Local mode</div>
-        </div>
+        <div id="user-info"><div id="user-name">Not signed in</div><div id="user-sub">Local mode</div></div>
       </div>
-
       <div class="clear-wrap">
         <button class="sb-btn danger" onclick="toggleClearDrop()">Clear history…</button>
         <div id="clear-drop">
@@ -239,7 +238,6 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'DM San
     </div>
   </div>
 
-  <!-- MOBILE TOGGLE -->
   <button id="sb-toggle" onclick="toggleSidebar()">
     <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" viewBox="0 0 24 24">
       <line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/>
@@ -247,523 +245,391 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'DM San
   </button>
   <div id="sb-backdrop" onclick="closeSidebar()"></div>
 
-  <!-- MAIN -->
   <div id="main-wrap">
     <div id="main">
-      <div class="wordmark" onclick="newChat()" title="New chat">Wonderstart</div>
-
+      <div class="wordmark" onclick="newChat()">WonderStart</div>
       <div class="mode-toggle">
         <button class="mode-btn active" id="btn-ai" onclick="setMode('ai')">✦ AI</button>
         <button class="mode-btn" id="btn-search" onclick="setMode('search')">⌕ Search</button>
       </div>
-
       <div class="search-wrap">
-        <textarea id="query" rows="1" placeholder="Ask anything…"
-          oninput="autoResize(this)" onkeydown="handleKey(event)"></textarea>
-        <button id="submit-btn" onclick="submit()" title="Send">
+        <textarea id="query" rows="1" placeholder="Ask anything…" oninput="autoResize(this)" onkeydown="handleKey(event)"></textarea>
+        <button id="submit-btn" onclick="submit()">
           <svg width="14" height="14" fill="none" stroke="#0d0e13" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24">
             <line x1="12" y1="19" x2="12" y2="5"/><polyline points="5 12 12 5 19 12"/>
           </svg>
         </button>
       </div>
-
       <p class="hint"><kbd>Enter</kbd> to send &nbsp;·&nbsp; <kbd>Shift+Enter</kbd> new line &nbsp;·&nbsp; <kbd>Tab</kbd> switch mode</p>
 
       <div id="response-wrap">
         <div class="response-card">
-          <div class="response-label" id="response-label">response</div>
+          <div class="response-label">response</div>
           <div id="context-note" class="context-note" style="display:none"></div>
           <div id="response-content"></div>
           <div class="response-actions" id="response-actions"></div>
         </div>
       </div>
+
+      <div id="search-wrap">
+        <div class="search-meta">
+          <span class="search-meta-label">search results</span>
+          <div class="search-meta-right">
+            <span id="search-count" style="font-size:.72rem;color:var(--muted);font-family:'IBM Plex Mono',monospace"></span>
+            <a id="ddg-link" class="open-ddg" target="_blank">Open in DuckDuckGo ↗</a>
+          </div>
+        </div>
+        <div id="results-list" class="results-list"></div>
+      </div>
     </div>
   </div>
 </div>
 
-<!-- SETTINGS BTN -->
-<button id="settings-btn" onclick="openSettings()" title="Settings">
+<button id="settings-btn" onclick="openSettings()">
   <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24">
     <circle cx="12" cy="12" r="3"/>
     <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
   </svg>
 </button>
 
-<!-- Firebase SDKs -->
 <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore-compat.js"></script>
-
 <script>
-// ─── STATE ────────────────────────────────────────────────
-let mode = 'ai';
-let geminiKey = '';
-let fbConfigObj = null;
-let streaming = false;
-let currentChatId = null;
-let currentMessages = []; // [{role:'user'|'model', parts:[{text}]}]
-let allChats = [];
-let db = null;
-let fbAuth = null;
-let currentUser = null;
-let fbReady = false;
+let mode='ai', geminiKey='', braveKey='', fbConfigObj=null;
+let streaming=false, currentChatId=null, currentMessages=[], allChats=[];
+let db=null, fbAuth=null, currentUser=null, fbReady=false;
 
-// ─── BOOT ─────────────────────────────────────────────────
-(function boot() {
-  geminiKey = localStorage.getItem('ws_gemini') || '';
-  const fbStr = localStorage.getItem('ws_fb');
-  if (fbStr) { try { fbConfigObj = JSON.parse(fbStr); } catch {} }
-
-  if (!geminiKey) { showSetup(1); return; }
-  if (fbConfigObj) { initFirebase(); } else { loadLocal(); showMain(); }
+(function boot(){
+  geminiKey=localStorage.getItem('ws_gemini')||'';
+  braveKey=localStorage.getItem('ws_brave')||'';
+  const fbStr=localStorage.getItem('ws_fb');
+  if(fbStr){try{fbConfigObj=JSON.parse(fbStr);}catch{}}
+  if(!geminiKey){showSetup(1);return;}
+  if(fbConfigObj){initFirebase();}else{loadLocal();showMain();}
 })();
 
-function showSetup(step) {
+function showSetup(n){
   document.getElementById('setup-overlay').classList.remove('hidden');
-  document.getElementById('s1').style.display = step === 1 ? '' : 'none';
-  document.getElementById('s2').style.display = step === 2 ? '' : 'none';
+  [1,2,3].forEach(i=>document.getElementById('s'+i).style.display=i===n?'':'none');
 }
-function showMain() {
-  document.getElementById('setup-overlay').classList.add('hidden');
-}
+function showMain(){document.getElementById('setup-overlay').classList.add('hidden');}
 
-// ─── SETUP STEPS ──────────────────────────────────────────
-function s1Next() {
-  const val = document.getElementById('s1-key').value.trim();
-  const err = document.getElementById('s1-err');
-  if (!val.startsWith('AIza')) { err.textContent = 'Key should start with AIza — check and try again.'; return; }
-  err.textContent = '';
-  localStorage.setItem('ws_gemini', val);
-  geminiKey = val;
-  showSetup(2);
+function s1Next(){
+  const v=document.getElementById('s1-key').value.trim(), e=document.getElementById('s1-err');
+  if(!v.startsWith('AIza')){e.textContent='Key should start with AIza.';return;}
+  localStorage.setItem('ws_gemini',v);geminiKey=v;e.textContent='';showSetup(2);
 }
-
-function s2Save() {
-  const raw = document.getElementById('s2-cfg').value.trim();
-  const err = document.getElementById('s2-err');
+function s2Next(){
+  const v=document.getElementById('s2-brave').value.trim();
+  if(v){localStorage.setItem('ws_brave',v);braveKey=v;}
+  showSetup(3);
+}
+function s2Skip(){showSetup(3);}
+function s3Save(){
+  const raw=document.getElementById('s3-cfg').value.trim(), e=document.getElementById('s3-err');
   let cfg;
-  try {
-    const clean = raw.replace(/^const\s+firebaseConfig\s*=\s*/, '').replace(/;$/, '');
-    cfg = JSON.parse(clean);
-  } catch {
-    err.textContent = 'Invalid JSON — copy the config object exactly from Firebase.';
-    return;
-  }
-  if (!cfg.projectId || !cfg.apiKey) { err.textContent = 'Config missing projectId or apiKey.'; return; }
-  err.textContent = '';
-  localStorage.setItem('ws_fb', JSON.stringify(cfg));
-  fbConfigObj = cfg;
-  initFirebase();
-  showMain();
+  try{const c=raw.replace(/^const\s+firebaseConfig\s*=\s*/,'').replace(/;$/,'');cfg=JSON.parse(c);}
+  catch{e.textContent='Invalid JSON — copy the config object exactly from Firebase.';return;}
+  if(!cfg.projectId||!cfg.apiKey){e.textContent='Config missing projectId or apiKey.';return;}
+  localStorage.setItem('ws_fb',JSON.stringify(cfg));fbConfigObj=cfg;
+  e.textContent='';initFirebase();showMain();
 }
+function s3Skip(){loadLocal();showMain();}
+document.getElementById('s1-key').addEventListener('keydown',e=>{if(e.key==='Enter')s1Next();});
+document.getElementById('s2-brave').addEventListener('keydown',e=>{if(e.key==='Enter')s2Next();});
 
-function s2Skip() {
-  loadLocal();
-  showMain();
-}
-
-document.getElementById('s1-key').addEventListener('keydown', e => { if (e.key === 'Enter') s1Next(); });
-document.getElementById('s2-cfg').addEventListener('keydown', e => { if (e.key === 'Enter') s2Save(); });
-
-// ─── FIREBASE ─────────────────────────────────────────────
-function initFirebase() {
-  try {
-    if (!firebase.apps.length) firebase.initializeApp(fbConfigObj);
-    fbAuth = firebase.auth();
-    db = firebase.firestore();
-    fbReady = true;
-    fbAuth.onAuthStateChanged(user => {
-      currentUser = user;
-      updateUserUI();
-      if (user) { loadFirestore(); } else { loadLocal(); }
+function initFirebase(){
+  try{
+    if(!firebase.apps.length)firebase.initializeApp(fbConfigObj);
+    fbAuth=firebase.auth();db=firebase.firestore();fbReady=true;
+    fbAuth.onAuthStateChanged(user=>{
+      currentUser=user;updateUserUI();
+      if(user){loadFirestore();}else{loadLocal();}
       showMain();
     });
-  } catch(e) {
-    console.error('Firebase error:', e);
-    loadLocal();
-    showMain();
-  }
+  }catch(e){console.error(e);loadLocal();showMain();}
 }
-
-async function loadFirestore() {
-  try {
-    const snap = await db.collection('users').doc(currentUser.uid)
-      .collection('chats').orderBy('updatedAt','desc').limit(200).get();
-    allChats = snap.docs.map(d => d.data());
-    renderSidebar();
-  } catch(e) { console.error(e); loadLocal(); }
+async function loadFirestore(){
+  try{
+    const snap=await db.collection('users').doc(currentUser.uid).collection('chats')
+      .orderBy('updatedAt','desc').limit(200).get();
+    allChats=snap.docs.map(d=>d.data());renderSidebar();
+  }catch(e){console.error(e);loadLocal();}
 }
-
-async function signInGoogle() {
-  if (!fbAuth) return;
-  try {
-    await fbAuth.signInWithPopup(new firebase.auth.GoogleAuthProvider());
-  } catch(e) {
-    console.error('Sign in failed:', e.message);
-    alert('Sign in failed: ' + e.message);
-  }
+async function signInGoogle(){
+  if(!fbAuth)return;
+  try{await fbAuth.signInWithPopup(new firebase.auth.GoogleAuthProvider());}
+  catch(e){alert('Sign in failed: '+e.message);}
 }
-
-async function signOut() {
-  if (!fbAuth) return;
+async function signOut(){
+  if(!fbAuth)return;
   await fbAuth.signOut();
-  currentUser = null;
-  allChats = [];
-  currentChatId = null;
-  currentMessages = [];
-  loadLocal();
-  renderSidebar();
-  updateUserUI();
-  newChat();
+  currentUser=null;allChats=[];currentChatId=null;currentMessages=[];
+  loadLocal();renderSidebar();updateUserUI();newChat();
 }
-
-function handleUserClick() {
-  if (!fbReady) { openSettings(); return; }
-  if (currentUser) { if (confirm('Sign out of ' + (currentUser.email || 'your account') + '?')) signOut(); }
-  else { signInGoogle(); }
+function handleUserClick(){
+  if(!fbReady){openSettings();return;}
+  if(currentUser){if(confirm('Sign out of '+(currentUser.email||'your account')+'?'))signOut();}
+  else signInGoogle();
 }
-
-function updateUserUI() {
-  const av = document.getElementById('user-av');
-  const nm = document.getElementById('user-name');
-  const sb = document.getElementById('user-sub');
-  if (currentUser) {
-    if (currentUser.photoURL) av.innerHTML = `<img src="${currentUser.photoURL}" alt="">`;
-    else av.textContent = (currentUser.displayName || 'U')[0].toUpperCase();
-    nm.textContent = currentUser.displayName || currentUser.email || 'Signed in';
-    sb.textContent = 'Click to sign out';
-  } else if (fbReady) {
-    av.textContent = 'G';
-    nm.textContent = 'Not signed in';
-    sb.textContent = 'Click to sign in with Google';
-  } else {
-    av.textContent = '·';
-    nm.textContent = 'Local mode';
-    sb.textContent = fbConfigObj ? 'Firebase configured' : 'No sync — settings to connect';
+function updateUserUI(){
+  const av=document.getElementById('user-av'),nm=document.getElementById('user-name'),sb=document.getElementById('user-sub');
+  if(currentUser){
+    if(currentUser.photoURL)av.innerHTML=`<img src="${currentUser.photoURL}" alt="">`;
+    else av.textContent=(currentUser.displayName||'U')[0].toUpperCase();
+    nm.textContent=currentUser.displayName||currentUser.email||'Signed in';
+    sb.textContent='Click to sign out';
+  }else if(fbReady){
+    av.textContent='G';nm.textContent='Not signed in';sb.textContent='Click to sign in with Google';
+  }else{
+    av.textContent='·';nm.textContent='Local mode';sb.textContent=fbConfigObj?'Firebase configured':'No sync';
   }
 }
 
-// ─── CHAT STORAGE ─────────────────────────────────────────
-function loadLocal() {
-  try { allChats = JSON.parse(localStorage.getItem('ws_chats') || '[]'); } catch { allChats = []; }
+function loadLocal(){
+  try{allChats=JSON.parse(localStorage.getItem('ws_chats')||'[]');}catch{allChats=[];}
   renderSidebar();
 }
-
-function genId() { return Date.now().toString(36) + Math.random().toString(36).substr(2,5); }
-
-async function persistChat(chat) {
-  const idx = allChats.findIndex(c => c.id === chat.id);
-  if (idx >= 0) allChats[idx] = chat; else allChats.unshift(chat);
-  if (db && currentUser) {
-    await db.collection('users').doc(currentUser.uid).collection('chats').doc(chat.id).set(chat);
-  } else {
-    localStorage.setItem('ws_chats', JSON.stringify(allChats));
-  }
+function genId(){return Date.now().toString(36)+Math.random().toString(36).substr(2,5);}
+async function persistChat(chat){
+  const idx=allChats.findIndex(c=>c.id===chat.id);
+  if(idx>=0)allChats[idx]=chat;else allChats.unshift(chat);
+  if(db&&currentUser){await db.collection('users').doc(currentUser.uid).collection('chats').doc(chat.id).set(chat);}
+  else localStorage.setItem('ws_chats',JSON.stringify(allChats));
   renderSidebar();
 }
-
-async function deleteChat(chatId) {
-  allChats = allChats.filter(c => c.id !== chatId);
-  if (db && currentUser) {
-    await db.collection('users').doc(currentUser.uid).collection('chats').doc(chatId).delete();
-  } else {
-    localStorage.setItem('ws_chats', JSON.stringify(allChats));
-  }
-  if (currentChatId === chatId) newChat(true);
+async function deleteChat(id){
+  allChats=allChats.filter(c=>c.id!==id);
+  if(db&&currentUser)await db.collection('users').doc(currentUser.uid).collection('chats').doc(id).delete();
+  else localStorage.setItem('ws_chats',JSON.stringify(allChats));
+  if(currentChatId===id)newChat(true);
   renderSidebar();
 }
-
-async function clearHistory(period) {
-  const now = Date.now();
-  const cutoffs = { hour: 3600000, day: 86400000, week: 604800000, all: Infinity };
-  const ms = cutoffs[period] || Infinity;
-  const toDelete = allChats.filter(c => (now - c.updatedAt) <= ms);
-  for (const c of toDelete) {
-    if (db && currentUser) {
-      await db.collection('users').doc(currentUser.uid).collection('chats').doc(c.id).delete();
-    }
-  }
-  allChats = allChats.filter(c => (now - c.updatedAt) > ms);
-  localStorage.setItem('ws_chats', JSON.stringify(allChats));
-  if (toDelete.find(c => c.id === currentChatId)) newChat(true);
-  renderSidebar();
-  closeClearDrop();
+async function clearHistory(period){
+  const now=Date.now(),cutoffs={hour:3600000,day:86400000,week:604800000,all:Infinity};
+  const ms=cutoffs[period]||Infinity;
+  const toDel=allChats.filter(c=>(now-c.updatedAt)<=ms);
+  for(const c of toDel){if(db&&currentUser)await db.collection('users').doc(currentUser.uid).collection('chats').doc(c.id).delete();}
+  allChats=allChats.filter(c=>(now-c.updatedAt)>ms);
+  localStorage.setItem('ws_chats',JSON.stringify(allChats));
+  if(toDel.find(c=>c.id===currentChatId))newChat(true);
+  renderSidebar();closeClearDrop();
 }
 
-// ─── SIDEBAR RENDER ───────────────────────────────────────
-function renderSidebar() {
-  const list = document.getElementById('chat-list');
-  if (!allChats.length) {
-    list.innerHTML = '<div class="empty-state">No chats yet.<br>Ask something to get started.</div>';
-    return;
-  }
-
-  const now = Date.now();
-  const d = (ms) => new Date(new Date().setHours(0,0,0,0) - ms);
-  const groups = [
-    { label:'Today',       chats:[], cutoff: d(0) },
-    { label:'Yesterday',   chats:[], cutoff: d(86400000) },
-    { label:'Last 7 days', chats:[], cutoff: d(7*86400000) },
-    { label:'Last 30 days',chats:[], cutoff: d(30*86400000) },
-    { label:'Older',       chats:[], cutoff: new Date(0) },
+function renderSidebar(){
+  const list=document.getElementById('chat-list');
+  if(!allChats.length){list.innerHTML='<div class="empty-state">No chats yet.<br>Ask something to get started.</div>';return;}
+  const d=ms=>new Date(new Date().setHours(0,0,0,0)-ms);
+  const groups=[
+    {label:'Today',chats:[]},{label:'Yesterday',chats:[]},
+    {label:'Last 7 days',chats:[]},{label:'Last 30 days',chats:[]},{label:'Older',chats:[]},
   ];
-
-  for (const chat of allChats) {
-    const t = new Date(chat.updatedAt);
-    if (t >= d(0)) groups[0].chats.push(chat);
-    else if (t >= d(86400000)) groups[1].chats.push(chat);
-    else if (t >= d(7*86400000)) groups[2].chats.push(chat);
-    else if (t >= d(30*86400000)) groups[3].chats.push(chat);
+  for(const chat of allChats){
+    const t=new Date(chat.updatedAt);
+    if(t>=d(0))groups[0].chats.push(chat);
+    else if(t>=d(86400000))groups[1].chats.push(chat);
+    else if(t>=d(7*86400000))groups[2].chats.push(chat);
+    else if(t>=d(30*86400000))groups[3].chats.push(chat);
     else groups[4].chats.push(chat);
   }
-
-  let html = '';
-  for (const g of groups) {
-    if (!g.chats.length) continue;
-    html += `<div class="group-label">${g.label}</div>`;
-    for (const c of g.chats) {
-      const active = c.id === currentChatId ? ' active' : '';
-      const n = c.messages ? c.messages.length : 0;
-      const turns = n > 0 ? ` <span style="color:var(--muted);font-size:.68rem">${Math.floor(n/2)}</span>` : '';
-      html += `<div class="chat-item${active}" onclick="loadChat('${c.id}')">
+  let html='';
+  for(const g of groups){
+    if(!g.chats.length)continue;
+    html+=`<div class="group-label">${g.label}</div>`;
+    for(const c of g.chats){
+      const active=c.id===currentChatId?' active':'';
+      const n=c.messages?c.messages.length:0;
+      const turns=n>0?` <span style="color:var(--muted);font-size:.68rem">${Math.floor(n/2)}</span>`:'';
+      html+=`<div class="chat-item${active}" onclick="loadChat('${c.id}')">
         <span class="chat-title">${escH(c.title)}${turns}</span>
-        <button class="chat-del" onclick="event.stopPropagation();deleteChat('${c.id}')" title="Delete">×</button>
+        <button class="chat-del" onclick="event.stopPropagation();deleteChat('${c.id}')">×</button>
       </div>`;
     }
   }
-  list.innerHTML = html;
+  list.innerHTML=html;
 }
+function escH(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
 
-function escH(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
-
-// ─── LOAD CHAT ────────────────────────────────────────────
-function loadChat(chatId) {
-  const chat = allChats.find(c => c.id === chatId);
-  if (!chat) return;
-  currentChatId = chatId;
-  currentMessages = chat.messages ? JSON.parse(JSON.stringify(chat.messages)) : [];
-
-  const lastModel = [...currentMessages].reverse().find(m => m.role === 'model');
-  const lastUser  = [...currentMessages].reverse().find(m => m.role === 'user');
-
-  if (lastUser) {
-    const q = document.getElementById('query');
-    q.value = lastUser.parts[0].text;
-    autoResize(q);
-  }
-
-  if (lastModel) {
-    const turns = Math.floor(currentMessages.length / 2);
-    if (turns > 1) {
-      document.getElementById('context-note').style.display = '';
-      document.getElementById('context-note').textContent = `↑ ${turns} turn${turns>1?'s':''} of context loaded — continue below`;
-    } else {
-      document.getElementById('context-note').style.display = 'none';
-    }
-    renderResponse(lastModel.parts[0].text, false);
+function loadChat(chatId){
+  const chat=allChats.find(c=>c.id===chatId);if(!chat)return;
+  currentChatId=chatId;currentMessages=chat.messages?JSON.parse(JSON.stringify(chat.messages)):[];
+  hideSearch();
+  const lastModel=[...currentMessages].reverse().find(m=>m.role==='model');
+  const lastUser=[...currentMessages].reverse().find(m=>m.role==='user');
+  if(lastUser){const q=document.getElementById('query');q.value=lastUser.parts[0].text;autoResize(q);}
+  if(lastModel){
+    const turns=Math.floor(currentMessages.length/2);
+    const cn=document.getElementById('context-note');
+    if(turns>1){cn.style.display='';cn.textContent=`↑ ${turns} turns of context loaded`;}else cn.style.display='none';
+    renderResponse(lastModel.parts[0].text,false);
     document.getElementById('response-wrap').classList.add('visible');
     showActions();
   }
-
-  renderSidebar();
-  closeSidebar();
+  renderSidebar();closeSidebar();
 }
 
-// ─── NEW CHAT ─────────────────────────────────────────────
-function newChat(silent) {
-  currentChatId = null;
-  currentMessages = [];
-  const q = document.getElementById('query');
-  q.value = '';
-  autoResize(q);
-  hideResponse();
-  renderSidebar();
-  if (!silent) { q.focus(); closeSidebar(); }
+function newChat(silent){
+  currentChatId=null;currentMessages=[];
+  const q=document.getElementById('query');q.value='';autoResize(q);
+  hideResponse();hideSearch();renderSidebar();
+  if(!silent){q.focus();closeSidebar();}
 }
+function hideResponse(){document.getElementById('response-wrap').classList.remove('visible');document.getElementById('context-note').style.display='none';}
+function hideSearch(){document.getElementById('search-wrap').style.display='none';}
 
-function hideResponse() {
-  document.getElementById('response-wrap').classList.remove('visible');
-  document.getElementById('context-note').style.display = 'none';
-}
-
-// ─── GEMINI ───────────────────────────────────────────────
-async function askGemini(userText) {
-  if (streaming) return;
-  streaming = true;
-
-  if (!currentChatId) currentChatId = genId();
-  currentMessages.push({ role:'user', parts:[{ text: userText }] });
-
-  showResponse('', true);
-
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:streamGenerateContent?key=${geminiKey}&alt=sse`;
-  const body = {
-    contents: currentMessages,
-    generationConfig: { temperature:0.7, maxOutputTokens:1800 }
-  };
-
-  try {
-    const res = await fetch(url, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(body) });
-
-    if (!res.ok) {
-      const err = await res.json().catch(()=>({error:{message:'HTTP '+res.status}}));
-      currentMessages.pop();
-      const msg = err?.error?.message || 'API error ' + res.status;
-      showResponse('⚠ ' + (res.status===403||res.status===400 ? 'API key rejected. Open settings (bottom-right) to update it.\n\n' : '') + msg, false);
-      streaming = false;
-      return;
-    }
-
-    const reader = res.body.getReader();
-    const dec = new TextDecoder();
-    let full = '', buf = '';
-
-    while (true) {
-      const { done, value } = await reader.read();
-      if (done) break;
-      buf += dec.decode(value, { stream:true });
-      const lines = buf.split('\n');
-      buf = lines.pop();
-      for (const line of lines) {
-        if (!line.startsWith('data:')) continue;
-        const data = line.slice(5).trim();
-        if (data === '[DONE]') continue;
-        try {
-          const json = JSON.parse(data);
-          const part = json?.candidates?.[0]?.content?.parts?.[0]?.text;
-          if (part) { full += part; renderResponse(full, true); }
-        } catch {}
-      }
-    }
-
-    currentMessages.push({ role:'model', parts:[{ text:full }] });
-    renderResponse(full, false);
-    showActions();
-
-    const title = userText.length > 60 ? userText.substring(0,57)+'…' : userText;
-    await persistChat({
-      id: currentChatId,
-      title,
-      messages: currentMessages,
-      createdAt: allChats.find(c=>c.id===currentChatId)?.createdAt || Date.now(),
-      updatedAt: Date.now()
-    });
-
-  } catch(e) {
-    currentMessages.pop();
-    showResponse('⚠ Network error: ' + e.message, false);
-  }
-
-  streaming = false;
-}
-
-// ─── UI HELPERS ───────────────────────────────────────────
-function setMode(m) {
-  mode = m;
-  document.getElementById('btn-ai').classList.toggle('active', m==='ai');
-  document.getElementById('btn-search').classList.toggle('active', m==='search');
-  document.getElementById('query').placeholder = m==='ai' ? 'Ask anything…' : 'Search the web…';
-  document.getElementById('query').focus();
-}
-
-function autoResize(el) {
-  el.style.height = 'auto';
-  el.style.height = Math.min(el.scrollHeight, 240) + 'px';
-}
-
-function handleKey(e) {
-  if (e.key === 'Tab') { e.preventDefault(); setMode(mode==='ai'?'search':'ai'); return; }
-  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); submit(); }
-}
-
-function submit() {
-  const q = document.getElementById('query').value.trim();
-  if (!q || streaming) return;
-  if (mode === 'search') { window.open('https://duckduckgo.com/?q='+encodeURIComponent(q),'_self'); return; }
+function submit(){
+  const q=document.getElementById('query').value.trim();
+  if(!q||streaming)return;
+  if(mode==='search'){doSearch(q);return;}
   askGemini(q);
 }
 
-function showResponse(text, cursor) {
+async function doSearch(query){
+  hideResponse();
+  const sw=document.getElementById('search-wrap');
+  sw.style.display='block';
+  document.getElementById('ddg-link').href='https://duckduckgo.com/?q='+encodeURIComponent(query);
+  document.getElementById('search-count').textContent='';
+  const rl=document.getElementById('results-list');
+
+  if(!braveKey){
+    rl.innerHTML=`<div class="search-msg">
+      No Brave Search key — <button data-link onclick="openSettings()">add one in Settings</button>
+      or <a href="https://duckduckgo.com/?q=${encodeURIComponent(query)}" target="_blank">open in DuckDuckGo ↗</a>
+    </div>`;
+    return;
+  }
+
+  rl.innerHTML='<div class="search-msg">Searching…</div>';
+  try{
+    const res=await fetch(
+      `https://api.search.brave.com/res/v1/web/search?q=${encodeURIComponent(query)}&count=10`,
+      {headers:{'Accept':'application/json','Accept-Encoding':'gzip','X-Subscription-Token':braveKey}}
+    );
+    if(!res.ok){
+      const msg=res.status===401?'Invalid Brave API key — update in Settings.':`Brave API error ${res.status}`;
+      rl.innerHTML=`<div class="search-msg">${msg} &nbsp;·&nbsp; <a href="https://duckduckgo.com/?q=${encodeURIComponent(query)}" target="_blank">Open in DuckDuckGo ↗</a></div>`;
+      return;
+    }
+    const data=await res.json();
+    const results=data?.web?.results||[];
+    if(!results.length){
+      rl.innerHTML=`<div class="search-msg">No results. <a href="https://duckduckgo.com/?q=${encodeURIComponent(query)}" target="_blank">Try DuckDuckGo ↗</a></div>`;
+      return;
+    }
+    document.getElementById('search-count').textContent=results.length+' results';
+    rl.innerHTML=results.map(r=>`
+      <div class="result-item" onclick="window.open('${escH(r.url)}','_blank')">
+        <div class="result-url">${escH(new URL(r.url).hostname.replace('www.',''))}</div>
+        <div class="result-title">${escH(r.title)}</div>
+        ${r.description?`<div class="result-desc">${escH(r.description)}</div>`:''}
+      </div>`).join('');
+  }catch(e){
+    rl.innerHTML=`<div class="search-msg">Network error: ${e.message} &nbsp;·&nbsp; <a href="https://duckduckgo.com/?q=${encodeURIComponent(query)}" target="_blank">Open in DuckDuckGo ↗</a></div>`;
+  }
+}
+
+async function askGemini(userText){
+  if(streaming)return;streaming=true;
+  if(!currentChatId)currentChatId=genId();
+  currentMessages.push({role:'user',parts:[{text:userText}]});
+  hideSearch();showResponse('',true);
+
+  const url=`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-04-17:streamGenerateContent?key=${geminiKey}&alt=sse`;
+  const body={contents:currentMessages,generationConfig:{temperature:0.7,maxOutputTokens:1800}};
+
+  try{
+    const res=await fetch(url,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+    if(!res.ok){
+      const err=await res.json().catch(()=>({error:{message:'HTTP '+res.status}}));
+      currentMessages.pop();
+      const msg=err?.error?.message||'API error '+res.status;
+      showResponse('⚠ '+(res.status===403||res.status===400?'API key rejected — open Settings to update.\n\n':'')+msg,false);
+      streaming=false;return;
+    }
+    const reader=res.body.getReader(),dec=new TextDecoder();
+    let full='',buf='';
+    while(true){
+      const{done,value}=await reader.read();if(done)break;
+      buf+=dec.decode(value,{stream:true});
+      const lines=buf.split('\n');buf=lines.pop();
+      for(const line of lines){
+        if(!line.startsWith('data:'))continue;
+        const data=line.slice(5).trim();if(data==='[DONE]')continue;
+        try{const j=JSON.parse(data);const p=j?.candidates?.[0]?.content?.parts?.[0]?.text;if(p){full+=p;renderResponse(full,true);}}catch{}
+      }
+    }
+    currentMessages.push({role:'model',parts:[{text:full}]});
+    renderResponse(full,false);showActions();
+    const title=userText.length>60?userText.substring(0,57)+'…':userText;
+    await persistChat({id:currentChatId,title,messages:currentMessages,
+      createdAt:allChats.find(c=>c.id===currentChatId)?.createdAt||Date.now(),updatedAt:Date.now()});
+  }catch(e){currentMessages.pop();showResponse('⚠ Network error: '+e.message,false);}
+  streaming=false;
+}
+
+function setMode(m){
+  mode=m;
+  document.getElementById('btn-ai').classList.toggle('active',m==='ai');
+  document.getElementById('btn-search').classList.toggle('active',m==='search');
+  document.getElementById('query').placeholder=m==='ai'?'Ask anything…':'Search the web…';
+  document.getElementById('query').focus();
+}
+function autoResize(el){el.style.height='auto';el.style.height=Math.min(el.scrollHeight,240)+'px';}
+function handleKey(e){
+  if(e.key==='Tab'){e.preventDefault();setMode(mode==='ai'?'search':'ai');return;}
+  if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();submit();}
+}
+function showResponse(text,cursor){
   document.getElementById('response-wrap').classList.add('visible');
-  document.getElementById('response-actions').innerHTML = '';
-  renderResponse(text, cursor);
+  document.getElementById('response-actions').innerHTML='';
+  renderResponse(text,cursor);
 }
-
-function renderResponse(text, cursor) {
-  document.getElementById('response-content').innerHTML =
-    mdLite(text) + (cursor ? '<span class="cursor-blink"></span>' : '');
+function renderResponse(text,cursor){
+  document.getElementById('response-content').innerHTML=mdLite(text)+(cursor?'<span class="cursor-blink"></span>':'');
 }
-
-function showActions() {
-  document.getElementById('response-actions').innerHTML = `
+function showActions(){
+  document.getElementById('response-actions').innerHTML=`
     <button class="act-btn" onclick="copyResp()">Copy</button>
     <button class="act-btn" onclick="newChat()">New chat</button>
     <button class="act-btn" onclick="searchThis()">Search instead</button>`;
 }
+function copyResp(){navigator.clipboard.writeText(document.getElementById('response-content').innerText).catch(()=>{});}
+function searchThis(){const q=document.getElementById('query').value.trim();if(q)window.open('https://duckduckgo.com/?q='+encodeURIComponent(q),'_blank');}
 
-function copyResp() {
-  navigator.clipboard.writeText(document.getElementById('response-content').innerText).catch(()=>{});
-}
-function searchThis() {
-  const q = document.getElementById('query').value.trim();
-  if (q) window.open('https://duckduckgo.com/?q='+encodeURIComponent(q),'_blank');
-}
+function toggleSidebar(){document.getElementById('sidebar').classList.toggle('open');document.getElementById('sb-backdrop').classList.toggle('open');}
+function closeSidebar(){if(window.innerWidth<=768){document.getElementById('sidebar').classList.remove('open');document.getElementById('sb-backdrop').classList.remove('open');}}
+function toggleClearDrop(){document.getElementById('clear-drop').classList.toggle('open');}
+function closeClearDrop(){document.getElementById('clear-drop').classList.remove('open');}
+document.addEventListener('click',e=>{if(!e.target.closest('.clear-wrap'))closeClearDrop();});
 
-// ─── SIDEBAR TOGGLE ───────────────────────────────────────
-function toggleSidebar() {
-  document.getElementById('sidebar').classList.toggle('open');
-  document.getElementById('sb-backdrop').classList.toggle('open');
-}
-function closeSidebar() {
-  if (window.innerWidth <= 768) {
-    document.getElementById('sidebar').classList.remove('open');
-    document.getElementById('sb-backdrop').classList.remove('open');
-  }
-}
-
-// ─── CLEAR DROPDOWN ───────────────────────────────────────
-function toggleClearDrop() { document.getElementById('clear-drop').classList.toggle('open'); }
-function closeClearDrop()  { document.getElementById('clear-drop').classList.remove('open'); }
-document.addEventListener('click', e => {
-  if (!e.target.closest('.clear-wrap')) closeClearDrop();
-});
-
-// ─── SETTINGS ─────────────────────────────────────────────
-function openSettings() {
-  document.getElementById('cfg-gemini').value = geminiKey;
-  document.getElementById('cfg-fb').value = fbConfigObj ? JSON.stringify(fbConfigObj) : '';
-  document.getElementById('cfg-err').textContent = '';
+function openSettings(){
+  document.getElementById('cfg-gemini').value=geminiKey;
+  document.getElementById('cfg-brave').value=braveKey;
+  document.getElementById('cfg-fb').value=fbConfigObj?JSON.stringify(fbConfigObj):'';
+  document.getElementById('cfg-err').textContent='';
   document.getElementById('settings-overlay').classList.remove('hidden');
 }
-function closeSettings() {
-  document.getElementById('settings-overlay').classList.add('hidden');
-}
-function saveSettings() {
-  const gk = document.getElementById('cfg-gemini').value.trim();
-  const fbs = document.getElementById('cfg-fb').value.trim();
-  const err = document.getElementById('cfg-err');
-
-  if (gk && !gk.startsWith('AIza')) { err.textContent = 'Gemini key should start with AIza.'; return; }
-  if (gk) { localStorage.setItem('ws_gemini', gk); geminiKey = gk; }
-
-  if (fbs) {
-    let cfg;
-    try { cfg = JSON.parse(fbs); } catch { err.textContent = 'Firebase config is not valid JSON.'; return; }
-    if (!cfg.projectId || !cfg.apiKey) { err.textContent = 'Config missing projectId or apiKey.'; return; }
-    localStorage.setItem('ws_fb', JSON.stringify(cfg));
-    fbConfigObj = cfg;
-  } else if (fbs === '') {
-    localStorage.removeItem('ws_fb');
-    fbConfigObj = null;
-  }
-
-  err.textContent = '';
-  closeSettings();
-  if (fbConfigObj && !fbReady) { initFirebase(); }
+function closeSettings(){document.getElementById('settings-overlay').classList.add('hidden');}
+function saveSettings(){
+  const gk=document.getElementById('cfg-gemini').value.trim();
+  const bk=document.getElementById('cfg-brave').value.trim();
+  const fbs=document.getElementById('cfg-fb').value.trim();
+  const err=document.getElementById('cfg-err');
+  if(gk&&!gk.startsWith('AIza')){err.textContent='Gemini key should start with AIza.';return;}
+  if(gk){localStorage.setItem('ws_gemini',gk);geminiKey=gk;}
+  if(bk){localStorage.setItem('ws_brave',bk);braveKey=bk;}else{localStorage.removeItem('ws_brave');braveKey='';}
+  if(fbs){
+    let cfg;try{cfg=JSON.parse(fbs);}catch{err.textContent='Firebase config is not valid JSON.';return;}
+    if(!cfg.projectId||!cfg.apiKey){err.textContent='Config missing projectId or apiKey.';return;}
+    localStorage.setItem('ws_fb',JSON.stringify(cfg));fbConfigObj=cfg;
+  }else{localStorage.removeItem('ws_fb');fbConfigObj=null;}
+  err.textContent='';closeSettings();
+  if(fbConfigObj&&!fbReady)initFirebase();
 }
 
-// ─── MARKDOWN LITE ────────────────────────────────────────
-function mdLite(t) {
+function mdLite(t){
   return t
     .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
     .replace(/`([^`]+)`/g,'<code class="md-code">$1</code>')
@@ -774,8 +640,7 @@ function mdLite(t) {
     .replace(/^\* (.+)$/gm,'<div class="md-li">• $1</div>')
     .replace(/^- (.+)$/gm,'<div class="md-li">• $1</div>')
     .replace(/^\d+\. (.+)$/gm,'<div class="md-li">$1</div>')
-    .replace(/\n\n/g,'<br><br>')
-    .replace(/\n/g,'<br>');
+    .replace(/\n\n/g,'<br><br>').replace(/\n/g,'<br>');
 }
 </script>
 </body>
