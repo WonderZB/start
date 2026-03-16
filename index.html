@@ -3,659 +3,780 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Start</title>
+<title>Wonderstart</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital@0;1&family=IBM+Plex+Mono:wght@400;500&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
 <style>
-  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#0d0e13;--surface:#14151c;--surface2:#1a1b24;--border:#2a2c38;
+  --text:#e8e4d8;--muted:#6b6d7d;--accent:#c9922a;--accent-dim:rgba(201,146,42,0.12);
+  --green:#4caf87;--red:#cf5c5c;--radius:10px;--sw:260px;
+}
+html,body{height:100%;background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;font-size:15px;line-height:1.6;-webkit-font-smoothing:antialiased}
 
-  :root {
-    --bg: #0d0e13;
-    --surface: #14151c;
-    --border: #2a2c38;
-    --text: #e8e4d8;
-    --muted: #6b6d7d;
-    --accent: #c9922a;
-    --accent-dim: rgba(201,146,42,0.12);
-    --green: #4caf87;
-    --red: #cf5c5c;
-    --radius: 10px;
-  }
+/* ── OVERLAYS ── */
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,0.7);display:flex;align-items:center;justify-content:center;z-index:300;padding:1.5rem}
+.overlay.hidden{display:none}
+.panel{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:2.5rem 2rem;width:100%;max-width:460px}
+.panel h2{font-family:'Playfair Display',serif;font-size:1.4rem;margin-bottom:0.35rem}
+.panel .sub{font-size:0.85rem;color:var(--muted);margin-bottom:1.5rem;line-height:1.6}
+.panel a{color:var(--accent);text-decoration:none}.panel a:hover{text-decoration:underline}
+.step-tag{font-family:'IBM Plex Mono',monospace;font-size:0.7rem;color:var(--accent);letter-spacing:.07em;text-transform:uppercase;margin-bottom:.5rem}
+.instructions{background:var(--bg);border-radius:var(--radius);padding:1rem;margin-bottom:1.25rem;font-size:0.8rem;color:var(--muted)}
+.instructions ol{padding-left:1.2rem}.instructions li{margin-bottom:.4rem}
+.instructions code{font-family:'IBM Plex Mono',monospace;font-size:.78rem;background:var(--surface);border-radius:4px;padding:1px 5px;color:var(--text)}
+.field-label{display:block;font-size:.78rem;font-family:'IBM Plex Mono',monospace;color:var(--muted);letter-spacing:.05em;text-transform:uppercase;margin-bottom:.45rem}
+.field-input{width:100%;background:var(--bg);border:1px solid var(--border);border-radius:var(--radius);padding:.7rem 1rem;font-family:'IBM Plex Mono',monospace;font-size:.83rem;color:var(--text);outline:none;transition:border-color .15s;margin-bottom:1rem}
+.field-input:focus{border-color:rgba(201,146,42,.4)}
+.err{font-size:.78rem;color:var(--red);min-height:1.1em;margin-bottom:.75rem}
+.btn-primary{width:100%;padding:.8rem;background:var(--accent);color:#0d0e13;font-family:'DM Sans',sans-serif;font-size:.9rem;font-weight:500;border:none;border-radius:var(--radius);cursor:pointer;transition:opacity .15s}
+.btn-primary:hover{opacity:.85}
+.btn-ghost{width:100%;padding:.65rem;background:transparent;color:var(--muted);font-family:'DM Sans',sans-serif;font-size:.85rem;border:1px solid var(--border);border-radius:var(--radius);cursor:pointer;margin-top:.6rem;transition:color .15s,border-color .15s}
+.btn-ghost:hover{color:var(--text);border-color:var(--muted)}
+.divider{display:flex;align-items:center;gap:.75rem;margin:.75rem 0;color:var(--muted);font-size:.75rem}.divider::before,.divider::after{content:'';flex:1;height:1px;background:var(--border)}
 
-  html, body {
-    height: 100%;
-    background: var(--bg);
-    color: var(--text);
-    font-family: 'DM Sans', sans-serif;
-    font-size: 15px;
-    line-height: 1.6;
-    -webkit-font-smoothing: antialiased;
-  }
+/* ── APP SHELL ── */
+#app{display:flex;height:100vh;overflow:hidden}
 
-  body {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    min-height: 100vh;
-    padding: 0 1rem;
-  }
+/* ── SIDEBAR ── */
+#sidebar{width:var(--sw);flex-shrink:0;background:var(--surface);border-right:1px solid var(--border);display:flex;flex-direction:column;height:100vh;transition:transform .25s ease;z-index:100}
+#sb-top{padding:.85rem;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:.5rem}
+#new-chat-btn{flex:1;padding:.55rem .9rem;background:var(--accent-dim);color:var(--accent);border:1px solid rgba(201,146,42,.25);border-radius:8px;font-family:'IBM Plex Mono',monospace;font-size:.75rem;cursor:pointer;text-align:left;transition:background .15s;white-space:nowrap}
+#new-chat-btn:hover{background:rgba(201,146,42,.2)}
+#sb-search-btn{width:30px;height:30px;border-radius:7px;background:transparent;border:1px solid var(--border);cursor:pointer;display:flex;align-items:center;justify-content:center;color:var(--muted);flex-shrink:0;transition:border-color .15s,color .15s}
+#sb-search-btn:hover{border-color:var(--muted);color:var(--text)}
+#chat-list{flex:1;overflow-y:auto;padding:.6rem .45rem}
+#chat-list::-webkit-scrollbar{width:3px}
+#chat-list::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px}
+.group-label{font-size:.67rem;font-family:'IBM Plex Mono',monospace;color:var(--muted);letter-spacing:.07em;text-transform:uppercase;padding:.5rem .5rem .2rem;margin-top:.35rem}
+.chat-item{display:flex;align-items:center;gap:5px;padding:.45rem .55rem;border-radius:7px;cursor:pointer;transition:background .12s;position:relative}
+.chat-item:hover{background:var(--surface2)}
+.chat-item.active{background:var(--accent-dim)}
+.chat-title{flex:1;font-size:.81rem;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+.chat-item.active .chat-title{color:var(--accent)}
+.chat-del{display:none;width:18px;height:18px;border:none;background:transparent;color:var(--muted);cursor:pointer;border-radius:4px;font-size:15px;line-height:1;align-items:center;justify-content:center;flex-shrink:0;padding:0;transition:color .12s}
+.chat-item:hover .chat-del{display:flex}
+.chat-del:hover{color:var(--red)}
+.empty-state{padding:2rem .5rem;font-size:.8rem;color:var(--muted);text-align:center;line-height:1.8}
 
-  /* ── SETUP OVERLAY ── */
-  #setup-overlay {
-    position: fixed;
-    inset: 0;
-    background: var(--bg);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    z-index: 100;
-    padding: 2rem;
-  }
-  #setup-overlay.hidden { display: none; }
+/* SIDEBAR FOOTER */
+#sb-footer{border-top:1px solid var(--border);padding:.7rem;display:flex;flex-direction:column;gap:.45rem}
+#user-area{display:flex;align-items:center;gap:8px;padding:.4rem .5rem;border-radius:7px;cursor:pointer;transition:background .12s;min-height:38px}
+#user-area:hover{background:var(--surface2)}
+#user-av{width:26px;height:26px;border-radius:50%;background:var(--accent-dim);border:1px solid rgba(201,146,42,.3);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:500;color:var(--accent);flex-shrink:0;overflow:hidden}
+#user-av img{width:100%;height:100%;object-fit:cover;border-radius:50%}
+#user-info{flex:1;min-width:0}
+#user-name{font-size:.81rem;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#user-sub{font-size:.7rem;color:var(--muted)}
+.sb-btn{width:100%;padding:.42rem .6rem;background:transparent;border:1px solid var(--border);border-radius:7px;font-family:'IBM Plex Mono',monospace;font-size:.7rem;color:var(--muted);cursor:pointer;text-align:left;transition:color .12s,border-color .12s}
+.sb-btn:hover{color:var(--text);border-color:var(--muted)}
+.sb-btn.danger:hover{color:var(--red);border-color:var(--red)}
+.clear-wrap{position:relative}
+#clear-drop{position:absolute;bottom:calc(100% + 4px);left:0;right:0;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:.35rem;display:none;z-index:50}
+#clear-drop.open{display:block}
+.clear-opt{display:block;width:100%;padding:.4rem .6rem;background:transparent;border:none;border-radius:5px;font-size:.79rem;color:var(--muted);cursor:pointer;text-align:left;transition:background .1s,color .1s}
+.clear-opt:hover{background:var(--border);color:var(--red)}
 
-  .setup-card {
-    max-width: 440px;
-    width: 100%;
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 16px;
-    padding: 2.5rem 2rem;
-  }
+/* ── MAIN AREA ── */
+#main-wrap{flex:1;display:flex;flex-direction:column;align-items:center;overflow-y:auto;padding:0 1rem 4rem;position:relative}
+#main{width:100%;max-width:680px;display:flex;flex-direction:column;align-items:center;padding-top:min(14vh,120px)}
 
-  .setup-card h2 {
-    font-family: 'Playfair Display', serif;
-    font-size: 1.5rem;
-    margin-bottom: 0.4rem;
-    color: var(--text);
-  }
-  .setup-card p {
-    font-size: 0.875rem;
-    color: var(--muted);
-    margin-bottom: 1.5rem;
-    line-height: 1.6;
-  }
-  .setup-card a { color: var(--accent); text-decoration: none; }
-  .setup-card a:hover { text-decoration: underline; }
+/* MOBILE SIDEBAR */
+#sb-toggle{display:none;position:fixed;top:.9rem;left:.9rem;width:36px;height:36px;border-radius:8px;background:var(--surface);border:1px solid var(--border);cursor:pointer;align-items:center;justify-content:center;z-index:200;color:var(--muted);transition:border-color .15s}
+#sb-toggle:hover{border-color:var(--muted)}
+#sb-backdrop{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:99}
+@media(max-width:768px){
+  #sidebar{position:fixed;left:0;top:0;transform:translateX(-100%)}
+  #sidebar.open{transform:translateX(0)}
+  #sb-toggle{display:flex}
+  #sb-backdrop.open{display:block}
+  #main{padding-top:min(12vh,80px)}
+}
 
-  .setup-card label {
-    display: block;
-    font-size: 0.8rem;
-    font-family: 'IBM Plex Mono', monospace;
-    color: var(--muted);
-    letter-spacing: 0.05em;
-    margin-bottom: 0.5rem;
-    text-transform: uppercase;
-  }
+/* WORDMARK */
+.wordmark{font-family:'Playfair Display',serif;font-size:1rem;font-style:italic;color:var(--muted);margin-bottom:2.5rem;cursor:pointer;user-select:none;transition:color .15s}
+.wordmark:hover{color:var(--accent)}
 
-  .setup-card input[type="text"],
-  .setup-card input[type="password"] {
-    width: 100%;
-    background: var(--bg);
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-    padding: 0.75rem 1rem;
-    font-family: 'IBM Plex Mono', monospace;
-    font-size: 0.85rem;
-    color: var(--text);
-    outline: none;
-    transition: border-color 0.15s;
-    margin-bottom: 1.25rem;
-  }
-  .setup-card input:focus { border-color: var(--accent); }
+/* MODE TOGGLE */
+.mode-toggle{display:flex;gap:4px;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:3px;margin-bottom:1.25rem}
+.mode-btn{padding:.33rem 1rem;border:none;border-radius:6px;font-family:'IBM Plex Mono',monospace;font-size:.74rem;letter-spacing:.04em;cursor:pointer;transition:background .15s,color .15s;background:transparent;color:var(--muted)}
+.mode-btn.active{background:var(--accent-dim);color:var(--accent)}
 
-  .setup-steps {
-    background: var(--bg);
-    border-radius: var(--radius);
-    padding: 1rem;
-    margin-bottom: 1.5rem;
-    font-size: 0.8rem;
-    color: var(--muted);
-  }
-  .setup-steps ol { padding-left: 1.2rem; }
-  .setup-steps li { margin-bottom: 0.4rem; }
-  .setup-steps li:last-child { margin-bottom: 0; }
-  .step-link { color: var(--accent); text-decoration: none; }
-  .step-link:hover { text-decoration: underline; }
+/* SEARCH BOX */
+.search-wrap{width:100%;position:relative;margin-bottom:1rem}
+#query{width:100%;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:1rem 3.5rem 1rem 1.25rem;font-family:'DM Sans',sans-serif;font-size:1rem;font-weight:300;color:var(--text);outline:none;resize:none;min-height:56px;max-height:240px;overflow-y:auto;transition:border-color .15s;line-height:1.5}
+#query::placeholder{color:var(--muted)}
+#query:focus{border-color:rgba(201,146,42,.4)}
+#submit-btn{position:absolute;right:.75rem;bottom:.75rem;width:32px;height:32px;border-radius:7px;background:var(--accent);border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:opacity .15s,transform .1s;flex-shrink:0}
+#submit-btn:hover{opacity:.85}
+#submit-btn:active{transform:scale(.95)}
+.hint{font-size:.74rem;color:var(--muted);text-align:center}
+.hint kbd{font-family:'IBM Plex Mono',monospace;font-size:.68rem;background:var(--surface);border:1px solid var(--border);border-radius:4px;padding:1px 5px}
 
-  /* ── MAIN PAGE ── */
-  #main {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    width: 100%;
-    max-width: 680px;
-    padding-top: min(14vh, 120px);
-    padding-bottom: 4rem;
-  }
-  #main.hidden { display: none; }
+/* RESPONSE */
+#response-wrap{width:100%;margin-top:2rem;opacity:0;transform:translateY(8px);transition:opacity .3s,transform .3s}
+#response-wrap.visible{opacity:1;transform:translateY(0)}
+.response-card{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:1.5rem 1.75rem}
+.response-label{font-family:'IBM Plex Mono',monospace;font-size:.69rem;color:var(--accent);letter-spacing:.08em;text-transform:uppercase;margin-bottom:1rem;display:flex;align-items:center;gap:8px}
+.response-label::after{content:'';flex:1;height:1px;background:var(--border)}
+#response-content{font-size:.94rem;line-height:1.78;color:var(--text);white-space:pre-wrap;word-break:break-word}
+#response-content strong{color:var(--accent);font-weight:500}
+.cursor-blink{display:inline-block;width:2px;height:1em;background:var(--accent);vertical-align:text-bottom;animation:blink .9s step-end infinite;margin-left:1px}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:0}}
+.response-actions{margin-top:1.25rem;padding-top:1rem;border-top:1px solid var(--border);display:flex;gap:.7rem;flex-wrap:wrap}
+.act-btn{font-size:.73rem;font-family:'IBM Plex Mono',monospace;color:var(--muted);background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:.33rem .7rem;cursor:pointer;transition:color .15s,border-color .15s}
+.act-btn:hover{color:var(--text);border-color:var(--muted)}
+.context-note{font-size:.75rem;color:var(--muted);font-family:'IBM Plex Mono',monospace;margin-bottom:.75rem}
 
-  .wordmark {
-    font-family: 'Playfair Display', serif;
-    font-size: 1rem;
-    font-style: italic;
-    color: var(--muted);
-    letter-spacing: 0.02em;
-    margin-bottom: 2.5rem;
-    cursor: pointer;
-    user-select: none;
-    transition: color 0.15s;
-  }
-  .wordmark:hover { color: var(--accent); }
+/* SETTINGS BTN */
+#settings-btn{position:fixed;bottom:1.25rem;right:1.25rem;width:36px;height:36px;border-radius:50%;background:var(--surface);border:1px solid var(--border);cursor:pointer;display:flex;align-items:center;justify-content:center;z-index:10;transition:border-color .15s;color:var(--muted)}
+#settings-btn:hover{border-color:var(--muted)}
 
-  /* ── MODE TOGGLE ── */
-  .mode-toggle {
-    display: flex;
-    gap: 4px;
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 8px;
-    padding: 3px;
-    margin-bottom: 1.25rem;
-  }
-  .mode-btn {
-    padding: 0.35rem 1.1rem;
-    border: none;
-    border-radius: 6px;
-    font-family: 'IBM Plex Mono', monospace;
-    font-size: 0.75rem;
-    letter-spacing: 0.04em;
-    cursor: pointer;
-    transition: background 0.15s, color 0.15s;
-    background: transparent;
-    color: var(--muted);
-  }
-  .mode-btn.active {
-    background: var(--accent-dim);
-    color: var(--accent);
-  }
-
-  /* ── SEARCH BOX ── */
-  .search-wrap {
-    width: 100%;
-    position: relative;
-    margin-bottom: 1rem;
-  }
-
-  #query {
-    width: 100%;
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-    padding: 1rem 3.5rem 1rem 1.25rem;
-    font-family: 'DM Sans', sans-serif;
-    font-size: 1rem;
-    font-weight: 300;
-    color: var(--text);
-    outline: none;
-    resize: none;
-    min-height: 56px;
-    max-height: 240px;
-    overflow-y: auto;
-    transition: border-color 0.15s;
-    line-height: 1.5;
-  }
-  #query::placeholder { color: var(--muted); }
-  #query:focus { border-color: rgba(201,146,42,0.4); }
-
-  #submit-btn {
-    position: absolute;
-    right: 0.75rem;
-    bottom: 0.75rem;
-    width: 32px;
-    height: 32px;
-    border-radius: 7px;
-    background: var(--accent);
-    border: none;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    transition: opacity 0.15s, transform 0.1s;
-    flex-shrink: 0;
-  }
-  #submit-btn:hover { opacity: 0.85; }
-  #submit-btn:active { transform: scale(0.95); }
-  #submit-btn svg { display: block; }
-
-  .hint {
-    font-size: 0.75rem;
-    color: var(--muted);
-    text-align: center;
-  }
-  .hint kbd {
-    font-family: 'IBM Plex Mono', monospace;
-    font-size: 0.7rem;
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 4px;
-    padding: 1px 5px;
-  }
-
-  /* ── RESPONSE AREA ── */
-  #response-wrap {
-    width: 100%;
-    margin-top: 2rem;
-    opacity: 0;
-    transform: translateY(8px);
-    transition: opacity 0.3s, transform 0.3s;
-  }
-  #response-wrap.visible {
-    opacity: 1;
-    transform: translateY(0);
-  }
-
-  .response-card {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 14px;
-    padding: 1.5rem 1.75rem;
-    position: relative;
-  }
-
-  .response-label {
-    font-family: 'IBM Plex Mono', monospace;
-    font-size: 0.7rem;
-    color: var(--accent);
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-    margin-bottom: 1rem;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-  }
-  .response-label::after {
-    content: '';
-    flex: 1;
-    height: 1px;
-    background: var(--border);
-  }
-
-  #response-content {
-    font-size: 0.95rem;
-    line-height: 1.75;
-    color: var(--text);
-    white-space: pre-wrap;
-    word-break: break-word;
-  }
-  #response-content strong { color: var(--accent); font-weight: 500; }
-
-  .cursor-blink {
-    display: inline-block;
-    width: 2px;
-    height: 1em;
-    background: var(--accent);
-    vertical-align: text-bottom;
-    animation: blink 0.9s step-end infinite;
-    margin-left: 1px;
-  }
-  @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0} }
-
-  .response-actions {
-    margin-top: 1.25rem;
-    padding-top: 1rem;
-    border-top: 1px solid var(--border);
-    display: flex;
-    gap: 0.75rem;
-    flex-wrap: wrap;
-  }
-  .action-btn {
-    font-size: 0.75rem;
-    font-family: 'IBM Plex Mono', monospace;
-    color: var(--muted);
-    background: var(--bg);
-    border: 1px solid var(--border);
-    border-radius: 6px;
-    padding: 0.35rem 0.75rem;
-    cursor: pointer;
-    transition: color 0.15s, border-color 0.15s;
-  }
-  .action-btn:hover { color: var(--text); border-color: var(--muted); }
-
-  /* ── SETTINGS BUTTON ── */
-  .settings-btn {
-    position: fixed;
-    bottom: 1.25rem;
-    right: 1.25rem;
-    width: 36px;
-    height: 36px;
-    border-radius: 50%;
-    background: var(--surface);
-    border: 1px solid var(--border);
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    transition: border-color 0.15s;
-    z-index: 10;
-  }
-  .settings-btn:hover { border-color: var(--muted); }
-  .settings-btn svg { color: var(--muted); }
-
-  /* ── SAVE BTN STYLE ── */
-  .save-btn {
-    width: 100%;
-    padding: 0.8rem;
-    background: var(--accent);
-    color: #0d0e13;
-    font-family: 'DM Sans', sans-serif;
-    font-size: 0.9rem;
-    font-weight: 500;
-    border: none;
-    border-radius: var(--radius);
-    cursor: pointer;
-    transition: opacity 0.15s;
-  }
-  .save-btn:hover { opacity: 0.85; }
-
-  .error-msg {
-    font-size: 0.8rem;
-    color: var(--red);
-    margin-top: 0.5rem;
-    min-height: 1em;
-  }
-
-  /* ── RESPONSIVE ── */
-  @media (max-width: 480px) {
-    #main { padding-top: 8vh; }
-    .response-card { padding: 1.25rem; }
-    .setup-card { padding: 1.75rem 1.25rem; }
-  }
-
-  /* ── MARKDOWN-LITE STYLING ── */
-  .md-h1, .md-h2, .md-h3 {
-    font-family: 'Playfair Display', serif;
-    color: var(--text);
-    margin: 1.2em 0 0.4em;
-  }
-  .md-h1 { font-size: 1.25rem; }
-  .md-h2 { font-size: 1.1rem; }
-  .md-h3 { font-size: 1rem; }
-  .md-li { margin-left: 1.2em; margin-bottom: 0.2em; }
-  .md-code {
-    font-family: 'IBM Plex Mono', monospace;
-    font-size: 0.82rem;
-    background: var(--bg);
-    border-radius: 4px;
-    padding: 1px 5px;
-    color: #90c694;
-  }
+/* MARKDOWN */
+.md-h1,.md-h2,.md-h3{font-family:'Playfair Display',serif;color:var(--text);margin:1.2em 0 .4em}
+.md-h1{font-size:1.25rem}.md-h2{font-size:1.1rem}.md-h3{font-size:1rem}
+.md-li{margin-left:1.2em;margin-bottom:.2em}
+.md-code{font-family:'IBM Plex Mono',monospace;font-size:.82rem;background:var(--bg);border-radius:4px;padding:1px 5px;color:#90c694}
 </style>
 </head>
 <body>
 
-<!-- ── SETUP OVERLAY ── -->
-<div id="setup-overlay">
-  <div class="setup-card">
-    <h2>One-time setup</h2>
-    <p>You need a free Gemini API key. It takes about 2 minutes and requires a Google account.</p>
-
-    <div class="setup-steps">
-      <ol>
-        <li>Go to <a class="step-link" href="https://aistudio.google.com/apikey" target="_blank">aistudio.google.com/apikey</a></li>
-        <li>Click <strong style="color:var(--text)">Get API key → Create API key</strong></li>
-        <li>Copy the key and paste it below</li>
-      </ol>
+<!-- ══ SETUP OVERLAY ══ -->
+<div class="overlay" id="setup-overlay">
+  <div class="panel" id="setup-panel">
+    <!-- Step 1: Gemini key -->
+    <div id="s1">
+      <div class="step-tag">Step 1 of 2 — AI engine</div>
+      <h2>Get your Gemini key</h2>
+      <p class="sub">Free tier: 1,500 requests/day. No credit card needed.</p>
+      <div class="instructions">
+        <ol>
+          <li>Go to <a href="https://aistudio.google.com/apikey" target="_blank">aistudio.google.com/apikey</a></li>
+          <li>Click <strong style="color:var(--text)">Get API key → Create API key</strong></li>
+          <li>Copy the key (starts with <code>AIza</code>) and paste below</li>
+        </ol>
+      </div>
+      <label class="field-label" for="s1-key">Gemini API key</label>
+      <input class="field-input" type="password" id="s1-key" placeholder="AIzaSy...">
+      <div class="err" id="s1-err"></div>
+      <button class="btn-primary" onclick="s1Next()">Continue →</button>
     </div>
 
-    <label for="api-key-input">Gemini API key</label>
-    <input type="password" id="api-key-input" placeholder="AIza...">
-    <div class="error-msg" id="setup-error"></div>
-
-    <button class="save-btn" onclick="saveKey()">Save &amp; start →</button>
-  </div>
-</div>
-
-<!-- ── MAIN INTERFACE ── -->
-<div id="main" class="hidden">
-  <div class="wordmark" onclick="clearAndFocus()" title="Clear">start.</div>
-
-  <div class="mode-toggle">
-    <button class="mode-btn active" id="btn-ai" onclick="setMode('ai')">✦ AI</button>
-    <button class="mode-btn" id="btn-search" onclick="setMode('search')">⌕ Search</button>
-  </div>
-
-  <div class="search-wrap">
-    <textarea id="query" rows="1"
-      placeholder="Ask anything or search..."
-      oninput="autoResize(this)"
-      onkeydown="handleKey(event)"></textarea>
-    <button id="submit-btn" onclick="submit()" title="Submit (Enter)">
-      <svg width="14" height="14" fill="none" stroke="#0d0e13" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24">
-        <line x1="12" y1="19" x2="12" y2="5"/><polyline points="5 12 12 5 19 12"/>
-      </svg>
-    </button>
-  </div>
-  <p class="hint"><kbd>Enter</kbd> to send &nbsp;·&nbsp; <kbd>Shift+Enter</kbd> for new line &nbsp;·&nbsp; <kbd>Tab</kbd> to switch mode</p>
-
-  <div id="response-wrap">
-    <div class="response-card">
-      <div class="response-label" id="response-label">response</div>
-      <div id="response-content"></div>
-      <div class="response-actions" id="response-actions"></div>
+    <!-- Step 2: Firebase -->
+    <div id="s2" style="display:none">
+      <div class="step-tag">Step 2 of 2 — Cross-device sync (optional)</div>
+      <h2>Connect Google sync</h2>
+      <p class="sub">Uses Firebase (free, by Google) to sync your history across all your devices. Skip to use local storage only.</p>
+      <div class="instructions">
+        <ol>
+          <li>Go to <a href="https://console.firebase.google.com" target="_blank">console.firebase.google.com</a> → <strong style="color:var(--text)">Add project</strong></li>
+          <li><strong style="color:var(--text)">Authentication</strong> → Get started → Enable <strong style="color:var(--text)">Google</strong></li>
+          <li>Add your GitHub Pages domain under <strong style="color:var(--text)">Authorized domains</strong><br><span style="color:var(--accent);font-size:.78rem">e.g. wonderzb.github.io</span></li>
+          <li><strong style="color:var(--text)">Firestore Database</strong> → Create database → Start in <strong style="color:var(--text)">Production mode</strong></li>
+          <li>In Firestore → <strong style="color:var(--text)">Rules</strong>, paste:<br>
+            <code>match /users/{uid}/{d=**} {<br>&nbsp;&nbsp;allow read,write: if request.auth.uid==uid;<br>}</code>
+          </li>
+          <li>⚙ <strong style="color:var(--text)">Project settings</strong> → scroll to <strong style="color:var(--text)">Your apps → Web app</strong> → register → copy the <code>firebaseConfig</code> object and paste it below</li>
+        </ol>
+      </div>
+      <label class="field-label" for="s2-cfg">Firebase config (JSON)</label>
+      <input class="field-input" type="text" id="s2-cfg" placeholder='{"apiKey":"...","authDomain":"...","projectId":"..."}'>
+      <div class="err" id="s2-err"></div>
+      <button class="btn-primary" onclick="s2Save()">Save &amp; start →</button>
+      <button class="btn-ghost" onclick="s2Skip()">Skip — use local storage only</button>
     </div>
   </div>
 </div>
 
-<!-- ── SETTINGS BUTTON ── -->
-<button class="settings-btn" onclick="openSettings()" title="Change API key">
+<!-- ══ SETTINGS OVERLAY ══ -->
+<div class="overlay hidden" id="settings-overlay">
+  <div class="panel">
+    <h2 style="margin-bottom:.3rem">Settings</h2>
+    <p class="sub" style="margin-bottom:1.25rem">Update your keys or manage sync.</p>
+
+    <label class="field-label" for="cfg-gemini">Gemini API key</label>
+    <input class="field-input" type="password" id="cfg-gemini" placeholder="AIzaSy...">
+
+    <label class="field-label" for="cfg-fb">Firebase config (JSON) — leave blank for local only</label>
+    <input class="field-input" type="text" id="cfg-fb" placeholder='{"apiKey":"..."}'>
+
+    <div class="err" id="cfg-err"></div>
+    <button class="btn-primary" onclick="saveSettings()">Save changes</button>
+    <button class="btn-ghost" onclick="closeSettings()">Cancel</button>
+  </div>
+</div>
+
+<!-- ══ APP ══ -->
+<div id="app">
+
+  <!-- SIDEBAR -->
+  <div id="sidebar">
+    <div id="sb-top">
+      <button id="new-chat-btn" onclick="newChat()">✦ New chat</button>
+    </div>
+
+    <div id="chat-list"><div class="empty-state">No chats yet.<br>Ask something to get started.</div></div>
+
+    <div id="sb-footer">
+      <div id="user-area" onclick="handleUserClick()">
+        <div id="user-av">?</div>
+        <div id="user-info">
+          <div id="user-name">Not signed in</div>
+          <div id="user-sub">Local mode</div>
+        </div>
+      </div>
+
+      <div class="clear-wrap">
+        <button class="sb-btn danger" onclick="toggleClearDrop()">Clear history…</button>
+        <div id="clear-drop">
+          <button class="clear-opt" onclick="clearHistory('hour')">Last hour</button>
+          <button class="clear-opt" onclick="clearHistory('day')">Last 24 hours</button>
+          <button class="clear-opt" onclick="clearHistory('week')">Last 7 days</button>
+          <button class="clear-opt" onclick="clearHistory('all')">All time</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MOBILE TOGGLE -->
+  <button id="sb-toggle" onclick="toggleSidebar()">
+    <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" viewBox="0 0 24 24">
+      <line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/>
+    </svg>
+  </button>
+  <div id="sb-backdrop" onclick="closeSidebar()"></div>
+
+  <!-- MAIN -->
+  <div id="main-wrap">
+    <div id="main">
+      <div class="wordmark" onclick="newChat()" title="New chat">Wonderstart</div>
+
+      <div class="mode-toggle">
+        <button class="mode-btn active" id="btn-ai" onclick="setMode('ai')">✦ AI</button>
+        <button class="mode-btn" id="btn-search" onclick="setMode('search')">⌕ Search</button>
+      </div>
+
+      <div class="search-wrap">
+        <textarea id="query" rows="1" placeholder="Ask anything…"
+          oninput="autoResize(this)" onkeydown="handleKey(event)"></textarea>
+        <button id="submit-btn" onclick="submit()" title="Send">
+          <svg width="14" height="14" fill="none" stroke="#0d0e13" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24">
+            <line x1="12" y1="19" x2="12" y2="5"/><polyline points="5 12 12 5 19 12"/>
+          </svg>
+        </button>
+      </div>
+
+      <p class="hint"><kbd>Enter</kbd> to send &nbsp;·&nbsp; <kbd>Shift+Enter</kbd> new line &nbsp;·&nbsp; <kbd>Tab</kbd> switch mode</p>
+
+      <div id="response-wrap">
+        <div class="response-card">
+          <div class="response-label" id="response-label">response</div>
+          <div id="context-note" class="context-note" style="display:none"></div>
+          <div id="response-content"></div>
+          <div class="response-actions" id="response-actions"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- SETTINGS BTN -->
+<button id="settings-btn" onclick="openSettings()" title="Settings">
   <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24">
-    <circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+    <circle cx="12" cy="12" r="3"/>
+    <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
   </svg>
 </button>
 
+<!-- Firebase SDKs -->
+<script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore-compat.js"></script>
+
 <script>
-  let mode = 'ai';
-  let apiKey = '';
-  let streaming = false;
+// ─── STATE ────────────────────────────────────────────────
+let mode = 'ai';
+let geminiKey = '';
+let fbConfigObj = null;
+let streaming = false;
+let currentChatId = null;
+let currentMessages = []; // [{role:'user'|'model', parts:[{text}]}]
+let allChats = [];
+let db = null;
+let fbAuth = null;
+let currentUser = null;
+let fbReady = false;
 
-  // ── INIT ──
-  (function init() {
-    apiKey = localStorage.getItem('gemini_key') || '';
-    if (apiKey) showMain();
-    else showSetup();
-  })();
+// ─── BOOT ─────────────────────────────────────────────────
+(function boot() {
+  geminiKey = localStorage.getItem('ws_gemini') || '';
+  const fbStr = localStorage.getItem('ws_fb');
+  if (fbStr) { try { fbConfigObj = JSON.parse(fbStr); } catch {} }
 
-  function showSetup() {
-    document.getElementById('setup-overlay').classList.remove('hidden');
-    document.getElementById('main').classList.add('hidden');
+  if (!geminiKey) { showSetup(1); return; }
+  if (fbConfigObj) { initFirebase(); } else { loadLocal(); showMain(); }
+})();
+
+function showSetup(step) {
+  document.getElementById('setup-overlay').classList.remove('hidden');
+  document.getElementById('s1').style.display = step === 1 ? '' : 'none';
+  document.getElementById('s2').style.display = step === 2 ? '' : 'none';
+}
+function showMain() {
+  document.getElementById('setup-overlay').classList.add('hidden');
+}
+
+// ─── SETUP STEPS ──────────────────────────────────────────
+function s1Next() {
+  const val = document.getElementById('s1-key').value.trim();
+  const err = document.getElementById('s1-err');
+  if (!val.startsWith('AIza')) { err.textContent = 'Key should start with AIza — check and try again.'; return; }
+  err.textContent = '';
+  localStorage.setItem('ws_gemini', val);
+  geminiKey = val;
+  showSetup(2);
+}
+
+function s2Save() {
+  const raw = document.getElementById('s2-cfg').value.trim();
+  const err = document.getElementById('s2-err');
+  let cfg;
+  try {
+    const clean = raw.replace(/^const\s+firebaseConfig\s*=\s*/, '').replace(/;$/, '');
+    cfg = JSON.parse(clean);
+  } catch {
+    err.textContent = 'Invalid JSON — copy the config object exactly from Firebase.';
+    return;
   }
-  function showMain() {
-    document.getElementById('setup-overlay').classList.add('hidden');
-    document.getElementById('main').classList.remove('hidden');
-    document.getElementById('query').focus();
-  }
+  if (!cfg.projectId || !cfg.apiKey) { err.textContent = 'Config missing projectId or apiKey.'; return; }
+  err.textContent = '';
+  localStorage.setItem('ws_fb', JSON.stringify(cfg));
+  fbConfigObj = cfg;
+  initFirebase();
+  showMain();
+}
 
-  function saveKey() {
-    const val = document.getElementById('api-key-input').value.trim();
-    const err = document.getElementById('setup-error');
-    if (!val.startsWith('AIza')) {
-      err.textContent = 'That doesn\'t look like a valid key (should start with AIza).';
-      return;
-    }
-    err.textContent = '';
-    localStorage.setItem('gemini_key', val);
-    apiKey = val;
+function s2Skip() {
+  loadLocal();
+  showMain();
+}
+
+document.getElementById('s1-key').addEventListener('keydown', e => { if (e.key === 'Enter') s1Next(); });
+document.getElementById('s2-cfg').addEventListener('keydown', e => { if (e.key === 'Enter') s2Save(); });
+
+// ─── FIREBASE ─────────────────────────────────────────────
+function initFirebase() {
+  try {
+    if (!firebase.apps.length) firebase.initializeApp(fbConfigObj);
+    fbAuth = firebase.auth();
+    db = firebase.firestore();
+    fbReady = true;
+    fbAuth.onAuthStateChanged(user => {
+      currentUser = user;
+      updateUserUI();
+      if (user) { loadFirestore(); } else { loadLocal(); }
+      showMain();
+    });
+  } catch(e) {
+    console.error('Firebase error:', e);
+    loadLocal();
     showMain();
   }
+}
 
-  document.getElementById('api-key-input').addEventListener('keydown', e => {
-    if (e.key === 'Enter') saveKey();
-  });
+async function loadFirestore() {
+  try {
+    const snap = await db.collection('users').doc(currentUser.uid)
+      .collection('chats').orderBy('updatedAt','desc').limit(200).get();
+    allChats = snap.docs.map(d => d.data());
+    renderSidebar();
+  } catch(e) { console.error(e); loadLocal(); }
+}
 
-  function openSettings() {
-    document.getElementById('api-key-input').value = apiKey;
-    showSetup();
+async function signInGoogle() {
+  if (!fbAuth) return;
+  try {
+    await fbAuth.signInWithPopup(new firebase.auth.GoogleAuthProvider());
+  } catch(e) {
+    console.error('Sign in failed:', e.message);
+    alert('Sign in failed: ' + e.message);
+  }
+}
+
+async function signOut() {
+  if (!fbAuth) return;
+  await fbAuth.signOut();
+  currentUser = null;
+  allChats = [];
+  currentChatId = null;
+  currentMessages = [];
+  loadLocal();
+  renderSidebar();
+  updateUserUI();
+  newChat();
+}
+
+function handleUserClick() {
+  if (!fbReady) { openSettings(); return; }
+  if (currentUser) { if (confirm('Sign out of ' + (currentUser.email || 'your account') + '?')) signOut(); }
+  else { signInGoogle(); }
+}
+
+function updateUserUI() {
+  const av = document.getElementById('user-av');
+  const nm = document.getElementById('user-name');
+  const sb = document.getElementById('user-sub');
+  if (currentUser) {
+    if (currentUser.photoURL) av.innerHTML = `<img src="${currentUser.photoURL}" alt="">`;
+    else av.textContent = (currentUser.displayName || 'U')[0].toUpperCase();
+    nm.textContent = currentUser.displayName || currentUser.email || 'Signed in';
+    sb.textContent = 'Click to sign out';
+  } else if (fbReady) {
+    av.textContent = 'G';
+    nm.textContent = 'Not signed in';
+    sb.textContent = 'Click to sign in with Google';
+  } else {
+    av.textContent = '·';
+    nm.textContent = 'Local mode';
+    sb.textContent = fbConfigObj ? 'Firebase configured' : 'No sync — settings to connect';
+  }
+}
+
+// ─── CHAT STORAGE ─────────────────────────────────────────
+function loadLocal() {
+  try { allChats = JSON.parse(localStorage.getItem('ws_chats') || '[]'); } catch { allChats = []; }
+  renderSidebar();
+}
+
+function genId() { return Date.now().toString(36) + Math.random().toString(36).substr(2,5); }
+
+async function persistChat(chat) {
+  const idx = allChats.findIndex(c => c.id === chat.id);
+  if (idx >= 0) allChats[idx] = chat; else allChats.unshift(chat);
+  if (db && currentUser) {
+    await db.collection('users').doc(currentUser.uid).collection('chats').doc(chat.id).set(chat);
+  } else {
+    localStorage.setItem('ws_chats', JSON.stringify(allChats));
+  }
+  renderSidebar();
+}
+
+async function deleteChat(chatId) {
+  allChats = allChats.filter(c => c.id !== chatId);
+  if (db && currentUser) {
+    await db.collection('users').doc(currentUser.uid).collection('chats').doc(chatId).delete();
+  } else {
+    localStorage.setItem('ws_chats', JSON.stringify(allChats));
+  }
+  if (currentChatId === chatId) newChat(true);
+  renderSidebar();
+}
+
+async function clearHistory(period) {
+  const now = Date.now();
+  const cutoffs = { hour: 3600000, day: 86400000, week: 604800000, all: Infinity };
+  const ms = cutoffs[period] || Infinity;
+  const toDelete = allChats.filter(c => (now - c.updatedAt) <= ms);
+  for (const c of toDelete) {
+    if (db && currentUser) {
+      await db.collection('users').doc(currentUser.uid).collection('chats').doc(c.id).delete();
+    }
+  }
+  allChats = allChats.filter(c => (now - c.updatedAt) > ms);
+  localStorage.setItem('ws_chats', JSON.stringify(allChats));
+  if (toDelete.find(c => c.id === currentChatId)) newChat(true);
+  renderSidebar();
+  closeClearDrop();
+}
+
+// ─── SIDEBAR RENDER ───────────────────────────────────────
+function renderSidebar() {
+  const list = document.getElementById('chat-list');
+  if (!allChats.length) {
+    list.innerHTML = '<div class="empty-state">No chats yet.<br>Ask something to get started.</div>';
+    return;
   }
 
-  // ── MODE ──
-  function setMode(m) {
-    mode = m;
-    document.getElementById('btn-ai').classList.toggle('active', m === 'ai');
-    document.getElementById('btn-search').classList.toggle('active', m === 'search');
+  const now = Date.now();
+  const d = (ms) => new Date(new Date().setHours(0,0,0,0) - ms);
+  const groups = [
+    { label:'Today',       chats:[], cutoff: d(0) },
+    { label:'Yesterday',   chats:[], cutoff: d(86400000) },
+    { label:'Last 7 days', chats:[], cutoff: d(7*86400000) },
+    { label:'Last 30 days',chats:[], cutoff: d(30*86400000) },
+    { label:'Older',       chats:[], cutoff: new Date(0) },
+  ];
+
+  for (const chat of allChats) {
+    const t = new Date(chat.updatedAt);
+    if (t >= d(0)) groups[0].chats.push(chat);
+    else if (t >= d(86400000)) groups[1].chats.push(chat);
+    else if (t >= d(7*86400000)) groups[2].chats.push(chat);
+    else if (t >= d(30*86400000)) groups[3].chats.push(chat);
+    else groups[4].chats.push(chat);
+  }
+
+  let html = '';
+  for (const g of groups) {
+    if (!g.chats.length) continue;
+    html += `<div class="group-label">${g.label}</div>`;
+    for (const c of g.chats) {
+      const active = c.id === currentChatId ? ' active' : '';
+      const n = c.messages ? c.messages.length : 0;
+      const turns = n > 0 ? ` <span style="color:var(--muted);font-size:.68rem">${Math.floor(n/2)}</span>` : '';
+      html += `<div class="chat-item${active}" onclick="loadChat('${c.id}')">
+        <span class="chat-title">${escH(c.title)}${turns}</span>
+        <button class="chat-del" onclick="event.stopPropagation();deleteChat('${c.id}')" title="Delete">×</button>
+      </div>`;
+    }
+  }
+  list.innerHTML = html;
+}
+
+function escH(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+// ─── LOAD CHAT ────────────────────────────────────────────
+function loadChat(chatId) {
+  const chat = allChats.find(c => c.id === chatId);
+  if (!chat) return;
+  currentChatId = chatId;
+  currentMessages = chat.messages ? JSON.parse(JSON.stringify(chat.messages)) : [];
+
+  const lastModel = [...currentMessages].reverse().find(m => m.role === 'model');
+  const lastUser  = [...currentMessages].reverse().find(m => m.role === 'user');
+
+  if (lastUser) {
     const q = document.getElementById('query');
-    q.placeholder = m === 'ai' ? 'Ask anything…' : 'Search the web…';
-    q.focus();
+    q.value = lastUser.parts[0].text;
+    autoResize(q);
   }
 
-  // ── INPUT ──
-  function autoResize(el) {
-    el.style.height = 'auto';
-    el.style.height = Math.min(el.scrollHeight, 240) + 'px';
+  if (lastModel) {
+    const turns = Math.floor(currentMessages.length / 2);
+    if (turns > 1) {
+      document.getElementById('context-note').style.display = '';
+      document.getElementById('context-note').textContent = `↑ ${turns} turn${turns>1?'s':''} of context loaded — continue below`;
+    } else {
+      document.getElementById('context-note').style.display = 'none';
+    }
+    renderResponse(lastModel.parts[0].text, false);
+    document.getElementById('response-wrap').classList.add('visible');
+    showActions();
   }
 
-  function handleKey(e) {
-    if (e.key === 'Tab') {
-      e.preventDefault();
-      setMode(mode === 'ai' ? 'search' : 'ai');
+  renderSidebar();
+  closeSidebar();
+}
+
+// ─── NEW CHAT ─────────────────────────────────────────────
+function newChat(silent) {
+  currentChatId = null;
+  currentMessages = [];
+  const q = document.getElementById('query');
+  q.value = '';
+  autoResize(q);
+  hideResponse();
+  renderSidebar();
+  if (!silent) { q.focus(); closeSidebar(); }
+}
+
+function hideResponse() {
+  document.getElementById('response-wrap').classList.remove('visible');
+  document.getElementById('context-note').style.display = 'none';
+}
+
+// ─── GEMINI ───────────────────────────────────────────────
+async function askGemini(userText) {
+  if (streaming) return;
+  streaming = true;
+
+  if (!currentChatId) currentChatId = genId();
+  currentMessages.push({ role:'user', parts:[{ text: userText }] });
+
+  showResponse('', true);
+
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:streamGenerateContent?key=${geminiKey}&alt=sse`;
+  const body = {
+    contents: currentMessages,
+    generationConfig: { temperature:0.7, maxOutputTokens:1800 }
+  };
+
+  try {
+    const res = await fetch(url, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(body) });
+
+    if (!res.ok) {
+      const err = await res.json().catch(()=>({error:{message:'HTTP '+res.status}}));
+      currentMessages.pop();
+      const msg = err?.error?.message || 'API error ' + res.status;
+      showResponse('⚠ ' + (res.status===403||res.status===400 ? 'API key rejected. Open settings (bottom-right) to update it.\n\n' : '') + msg, false);
+      streaming = false;
       return;
     }
-    if (e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault();
-      submit();
-    }
-  }
 
-  function clearAndFocus() {
-    document.getElementById('query').value = '';
-    autoResize(document.getElementById('query'));
-    hideResponse();
-    document.getElementById('query').focus();
-  }
+    const reader = res.body.getReader();
+    const dec = new TextDecoder();
+    let full = '', buf = '';
 
-  // ── SUBMIT ──
-  function submit() {
-    const q = document.getElementById('query').value.trim();
-    if (!q || streaming) return;
-
-    if (mode === 'search') {
-      window.open('https://duckduckgo.com/?q=' + encodeURIComponent(q), '_self');
-      return;
-    }
-    askGemini(q);
-  }
-
-  // ── GEMINI ──
-  async function askGemini(prompt) {
-    if (streaming) return;
-    streaming = true;
-
-    showResponse('thinking…', true);
-
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:streamGenerateContent?key=${apiKey}&alt=sse`;
-
-    const body = {
-      contents: [{ parts: [{ text: prompt }] }],
-      generationConfig: { temperature: 0.7, maxOutputTokens: 1800 }
-    };
-
-    try {
-      const res = await fetch(url, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body)
-      });
-
-      if (!res.ok) {
-        const err = await res.json();
-        const msg = err?.error?.message || 'API error ' + res.status;
-        if (res.status === 400 || res.status === 403) {
-          showResponse('⚠ API key rejected. Click the settings icon (bottom-right) to update it.\n\n' + msg, false);
-        } else {
-          showResponse('⚠ ' + msg, false);
-        }
-        streaming = false;
-        return;
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      buf += dec.decode(value, { stream:true });
+      const lines = buf.split('\n');
+      buf = lines.pop();
+      for (const line of lines) {
+        if (!line.startsWith('data:')) continue;
+        const data = line.slice(5).trim();
+        if (data === '[DONE]') continue;
+        try {
+          const json = JSON.parse(data);
+          const part = json?.candidates?.[0]?.content?.parts?.[0]?.text;
+          if (part) { full += part; renderResponse(full, true); }
+        } catch {}
       }
-
-      const reader = res.body.getReader();
-      const decoder = new TextDecoder();
-      let full = '';
-      let buffer = '';
-
-      showResponse('', true);
-
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-        buffer += decoder.decode(value, { stream: true });
-        const lines = buffer.split('\n');
-        buffer = lines.pop();
-        for (const line of lines) {
-          if (!line.startsWith('data:')) continue;
-          const data = line.slice(5).trim();
-          if (data === '[DONE]') continue;
-          try {
-            const json = JSON.parse(data);
-            const part = json?.candidates?.[0]?.content?.parts?.[0]?.text;
-            if (part) {
-              full += part;
-              renderResponse(full, true);
-            }
-          } catch {}
-        }
-      }
-
-      renderResponse(full, false);
-      showActions(full);
-
-    } catch (err) {
-      showResponse('⚠ Network error: ' + err.message, false);
     }
-    streaming = false;
+
+    currentMessages.push({ role:'model', parts:[{ text:full }] });
+    renderResponse(full, false);
+    showActions();
+
+    const title = userText.length > 60 ? userText.substring(0,57)+'…' : userText;
+    await persistChat({
+      id: currentChatId,
+      title,
+      messages: currentMessages,
+      createdAt: allChats.find(c=>c.id===currentChatId)?.createdAt || Date.now(),
+      updatedAt: Date.now()
+    });
+
+  } catch(e) {
+    currentMessages.pop();
+    showResponse('⚠ Network error: ' + e.message, false);
   }
 
-  // ── RESPONSE UI ──
-  function showResponse(text, showCursor) {
-    const wrap = document.getElementById('response-wrap');
-    wrap.classList.add('visible');
-    document.getElementById('response-actions').innerHTML = '';
-    renderResponse(text, showCursor);
+  streaming = false;
+}
+
+// ─── UI HELPERS ───────────────────────────────────────────
+function setMode(m) {
+  mode = m;
+  document.getElementById('btn-ai').classList.toggle('active', m==='ai');
+  document.getElementById('btn-search').classList.toggle('active', m==='search');
+  document.getElementById('query').placeholder = m==='ai' ? 'Ask anything…' : 'Search the web…';
+  document.getElementById('query').focus();
+}
+
+function autoResize(el) {
+  el.style.height = 'auto';
+  el.style.height = Math.min(el.scrollHeight, 240) + 'px';
+}
+
+function handleKey(e) {
+  if (e.key === 'Tab') { e.preventDefault(); setMode(mode==='ai'?'search':'ai'); return; }
+  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); submit(); }
+}
+
+function submit() {
+  const q = document.getElementById('query').value.trim();
+  if (!q || streaming) return;
+  if (mode === 'search') { window.open('https://duckduckgo.com/?q='+encodeURIComponent(q),'_self'); return; }
+  askGemini(q);
+}
+
+function showResponse(text, cursor) {
+  document.getElementById('response-wrap').classList.add('visible');
+  document.getElementById('response-actions').innerHTML = '';
+  renderResponse(text, cursor);
+}
+
+function renderResponse(text, cursor) {
+  document.getElementById('response-content').innerHTML =
+    mdLite(text) + (cursor ? '<span class="cursor-blink"></span>' : '');
+}
+
+function showActions() {
+  document.getElementById('response-actions').innerHTML = `
+    <button class="act-btn" onclick="copyResp()">Copy</button>
+    <button class="act-btn" onclick="newChat()">New chat</button>
+    <button class="act-btn" onclick="searchThis()">Search instead</button>`;
+}
+
+function copyResp() {
+  navigator.clipboard.writeText(document.getElementById('response-content').innerText).catch(()=>{});
+}
+function searchThis() {
+  const q = document.getElementById('query').value.trim();
+  if (q) window.open('https://duckduckgo.com/?q='+encodeURIComponent(q),'_blank');
+}
+
+// ─── SIDEBAR TOGGLE ───────────────────────────────────────
+function toggleSidebar() {
+  document.getElementById('sidebar').classList.toggle('open');
+  document.getElementById('sb-backdrop').classList.toggle('open');
+}
+function closeSidebar() {
+  if (window.innerWidth <= 768) {
+    document.getElementById('sidebar').classList.remove('open');
+    document.getElementById('sb-backdrop').classList.remove('open');
+  }
+}
+
+// ─── CLEAR DROPDOWN ───────────────────────────────────────
+function toggleClearDrop() { document.getElementById('clear-drop').classList.toggle('open'); }
+function closeClearDrop()  { document.getElementById('clear-drop').classList.remove('open'); }
+document.addEventListener('click', e => {
+  if (!e.target.closest('.clear-wrap')) closeClearDrop();
+});
+
+// ─── SETTINGS ─────────────────────────────────────────────
+function openSettings() {
+  document.getElementById('cfg-gemini').value = geminiKey;
+  document.getElementById('cfg-fb').value = fbConfigObj ? JSON.stringify(fbConfigObj) : '';
+  document.getElementById('cfg-err').textContent = '';
+  document.getElementById('settings-overlay').classList.remove('hidden');
+}
+function closeSettings() {
+  document.getElementById('settings-overlay').classList.add('hidden');
+}
+function saveSettings() {
+  const gk = document.getElementById('cfg-gemini').value.trim();
+  const fbs = document.getElementById('cfg-fb').value.trim();
+  const err = document.getElementById('cfg-err');
+
+  if (gk && !gk.startsWith('AIza')) { err.textContent = 'Gemini key should start with AIza.'; return; }
+  if (gk) { localStorage.setItem('ws_gemini', gk); geminiKey = gk; }
+
+  if (fbs) {
+    let cfg;
+    try { cfg = JSON.parse(fbs); } catch { err.textContent = 'Firebase config is not valid JSON.'; return; }
+    if (!cfg.projectId || !cfg.apiKey) { err.textContent = 'Config missing projectId or apiKey.'; return; }
+    localStorage.setItem('ws_fb', JSON.stringify(cfg));
+    fbConfigObj = cfg;
+  } else if (fbs === '') {
+    localStorage.removeItem('ws_fb');
+    fbConfigObj = null;
   }
 
-  function hideResponse() {
-    const wrap = document.getElementById('response-wrap');
-    wrap.classList.remove('visible');
-  }
+  err.textContent = '';
+  closeSettings();
+  if (fbConfigObj && !fbReady) { initFirebase(); }
+}
 
-  function renderResponse(text, showCursor) {
-    const el = document.getElementById('response-content');
-    el.innerHTML = mdLite(text) + (showCursor ? '<span class="cursor-blink"></span>' : '');
-  }
-
-  function showActions(text) {
-    const acts = document.getElementById('response-actions');
-    acts.innerHTML = `
-      <button class="action-btn" onclick="copyResponse()">Copy</button>
-      <button class="action-btn" onclick="clearAndFocus()">New question</button>
-      <button class="action-btn" onclick="searchThis()">Search instead</button>
-    `;
-  }
-
-  function copyResponse() {
-    const text = document.getElementById('response-content').innerText;
-    navigator.clipboard.writeText(text).catch(() => {});
-  }
-
-  function searchThis() {
-    const q = document.getElementById('query').value.trim();
-    if (q) window.open('https://duckduckgo.com/?q=' + encodeURIComponent(q), '_blank');
-  }
-
-  // ── MARKDOWN LITE ──
-  function mdLite(text) {
-    return text
-      .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
-      .replace(/`([^`]+)`/g, '<code class="md-code">$1</code>')
-      .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
-      .replace(/^### (.+)$/gm, '<div class="md-h3">$1</div>')
-      .replace(/^## (.+)$/gm, '<div class="md-h2">$1</div>')
-      .replace(/^# (.+)$/gm, '<div class="md-h1">$1</div>')
-      .replace(/^\* (.+)$/gm, '<div class="md-li">• $1</div>')
-      .replace(/^- (.+)$/gm, '<div class="md-li">• $1</div>')
-      .replace(/^\d+\. (.+)$/gm, '<div class="md-li">$1</div>')
-      .replace(/\n\n/g, '<br><br>')
-      .replace(/\n/g, '<br>');
-  }
+// ─── MARKDOWN LITE ────────────────────────────────────────
+function mdLite(t) {
+  return t
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+    .replace(/`([^`]+)`/g,'<code class="md-code">$1</code>')
+    .replace(/\*\*(.+?)\*\*/g,'<strong>$1</strong>')
+    .replace(/^### (.+)$/gm,'<div class="md-h3">$1</div>')
+    .replace(/^## (.+)$/gm,'<div class="md-h2">$1</div>')
+    .replace(/^# (.+)$/gm,'<div class="md-h1">$1</div>')
+    .replace(/^\* (.+)$/gm,'<div class="md-li">• $1</div>')
+    .replace(/^- (.+)$/gm,'<div class="md-li">• $1</div>')
+    .replace(/^\d+\. (.+)$/gm,'<div class="md-li">$1</div>')
+    .replace(/\n\n/g,'<br><br>')
+    .replace(/\n/g,'<br>');
+}
 </script>
 </body>
 </html>
