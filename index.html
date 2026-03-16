@@ -187,7 +187,7 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'DM San
         <li>Sign up free (no credit card) → click <strong style="color:var(--text)">Create Key</strong></li>
         <li>Copy the key (starts with <code>sk-or-</code>) and paste below</li>
       </ol></div>
-      <label class="fl">Gemini API key</label>
+      <label class="fl">OpenRouter API key</label>
       <input class="fi" type="password" id="s1-key" placeholder="sk-or-v1-...">
       <div class="er" id="s1-err"></div>
       <button class="bp" onclick="s1Next()">Continue →</button>
@@ -361,7 +361,7 @@ function showMain(){document.getElementById('setup-overlay').classList.add('hidd
 // ── SETUP ─────────────────────────────────────────────────
 function s1Next(){
   const v=document.getElementById('s1-key').value.trim(),e=document.getElementById('s1-err');
-  if(!v.startsWith('sk-or')){e.textContent='Key should start with sk-or — copy from openrouter.ai/keys.';return;}
+  if(!v||v.length<10){e.textContent='Please paste your full OpenRouter key.';return;}
   localStorage.setItem('ws_ai',v);aiKey=v;e.textContent='';showSetup(2);
 }
 function s2Next(){
