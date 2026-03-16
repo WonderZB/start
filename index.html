@@ -2,8 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta http-equiv="Content-Security-Policy" content="img-src 'self' https: data: blob:; default-src 'self' https: blob: data:; script-src 'self' 'unsafe-inline' https:; style-src 'self' 'unsafe-inline' https:">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, interactive-widget=resizes-content">
 <title>WonderStart</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital@0;1&family=IBM+Plex+Mono:wght@400;500&family=DM+Sans:wght@300;400;500&family=Syne:wght@700&display=swap" rel="stylesheet">
@@ -161,7 +160,7 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'DM San
   #sidebar.open{transform:translateX(0)}
   #sb-toggle{display:flex}
   #sb-backdrop.open{display:block}
-  #mode-bar{padding:.55rem .75rem .55rem 3.5rem;justify-content:flex-end}
+  #mode-bar{padding:.55rem .75rem .55rem 3.5rem;justify-content:center}
   #mode-bar-title{display:none}
   #main-col{min-height:0;height:100%}
   #thread{padding:.75rem .75rem .5rem;-webkit-overflow-scrolling:touch;flex:1;min-height:0}
@@ -745,31 +744,19 @@ function submit(){
   askGemini(text,imgs);
 }
 
-async function generateImage(prompt){
+function generateImage(prompt){
   const clean=prompt.replace(/^(can you |please |could you )?(generate|create|make|draw|show me|give me|paint|design|render)\s+(an?\s+)?(image|picture|photo|illustration|drawing|art|artwork|visual|portrait|landscape)\s+(of\s+)?(me\s+)?(a\s+)?/i,'').trim()||prompt;
   hideEmpty();
   const thread=document.getElementById('thread');
+  const seed=Math.floor(Math.random()*99999);
+  const src='https://image.pollinations.ai/prompt/'+encodeURIComponent(clean)+'?nologo=true&seed='+seed;
+  const safeClean=escH(clean);
   const id='img-'+genId();
-  thread.innerHTML+=`<div class="msg assistant" id="${id}"><div class="bubble"><div class="typing-dot"><span></span><span></span><span></span></div></div></div>`;
+  thread.innerHTML+=`<div class="msg assistant" id="${id}"><div class="bubble">
+    <img src="${src}" referrerpolicy="no-referrer" style="max-width:100%;border-radius:12px;display:block;min-height:120px;background:var(--surface2)" alt="${safeClean}">
+    <div style="font-size:.72rem;color:var(--muted);margin-top:.4rem;font-family:IBM Plex Mono,monospace">${safeClean} · via pollinations.ai</div>
+  </div></div>`;
   scrollToNewMessage();
-  const el=document.getElementById(id);
-  // Try up to 3 times with different seeds
-  for(let attempt=0;attempt<3;attempt++){
-    const seed=Math.floor(Math.random()*999999);
-    const src=`https://image.pollinations.ai/prompt/${encodeURIComponent(clean)}?width=800&height=500&nologo=true&seed=${seed}&model=flux`;
-    try{
-      const res=await fetch(src);
-      if(!res.ok||!res.headers.get('content-type')?.startsWith('image/')){
-        if(attempt<2)continue;
-        throw new Error('Not an image response');
-      }
-      const blob=await res.blob();
-      const url=URL.createObjectURL(blob);
-      el.querySelector('.bubble').innerHTML=`<img src="${url}" alt="${escH(clean)}" style="max-width:100%;border-radius:10px;display:block"><div style="margin-top:.5rem;font-size:.8rem;color:var(--muted)">${escH(clean)}</div><div style="margin-top:.6rem;padding-top:.5rem;border-top:1px solid var(--border);font-family:'IBM Plex Mono',monospace;font-size:.65rem;color:var(--muted)">via pollinations.ai (flux)</div>`;
-      followScroll();
-      return;
-    }catch(e){if(attempt===2)el.querySelector('.bubble').innerHTML=`<span style="color:var(--muted);font-size:.85rem">⚠ Image generation failed: ${e.message}. Try rephrasing.</span>`;}
-  }
 }
 
 // ── SERPER SEARCH ─────────────────────────────────────────
@@ -783,7 +770,7 @@ async function doSearch(query){
     const res=await fetch('https://google.serper.dev/search',{
       method:'POST',
       headers:{'X-API-KEY':braveKey,'Content-Type':'application/json'},
-      body:JSON.stringify({q:query,num:6,gl:'us'})
+      body:JSON.stringify({q:query,num:6,gl:'us',images:true})
     });
     if(!res.ok){
       const msg=res.status===401?'Invalid Serper key — update in Settings ⚙.':`Search error ${res.status}`;
