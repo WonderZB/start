@@ -725,7 +725,7 @@ async function askGemini(userText, images){
   const sysPrompt=`You are a helpful AI assistant embedded in WonderStart, a personal browser start page. Today's date is ${today}. Always use this date when asked about the current date or time. Search the web when you need current information. Be thorough but concise. When the user asks you to generate, create, or show an image, respond with a markdown image tag: ![detailed description](image) — put a rich detailed description in the alt text.`;
 
   const body={
-    model:'qwen/qwen3-235b-a22b:free',
+    model:'openrouter/free',
     messages:[{role:'system',content:sysPrompt},...buildContent(currentMessages)],
     stream:true,
     max_tokens:8000,
