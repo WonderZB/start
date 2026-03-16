@@ -655,9 +655,18 @@ async function doSearch(query){
     let results;
     if(isBrave){
       const target='https://api.search.brave.com/res/v1/web/search?q='+encodeURIComponent(query)+'&count=10';
-      const res=await fetch('https://corsproxy.io/?url='+encodeURIComponent(target),{
-        headers:{'X-Subscription-Token':braveKey,'Accept':'application/json'}
-      });
+      // Try two CORS proxies in sequence for reliability
+      let res;
+      try{
+        res=await fetch('https://api.allorigins.win/raw?url='+encodeURIComponent(target+'&accept=application/json'),{
+          headers:{'X-Subscription-Token':braveKey}
+        });
+        if(!res.ok)throw new Error('allorigins failed');
+      }catch{
+        res=await fetch('https://corsproxy.io/?url='+encodeURIComponent(target),{
+          headers:{'X-Subscription-Token':braveKey,'Accept':'application/json'}
+        });
+      }
       if(!res.ok){
         const msg=res.status===401?'Invalid Brave API key — update in Settings.':`Brave API error ${res.status}`;
         addSearchBlock(query,null,msg);return;
@@ -695,7 +704,12 @@ async function askGemini(userText, images){
 
   const bubbleId=addAssistantBubble();
   const url=`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:streamGenerateContent?key=${geminiKey}&alt=sse`;
-  const body={contents:currentMessages,generationConfig:{temperature:0.7,maxOutputTokens:2000}};
+  const today=new Date().toLocaleDateString('en-GB',{weekday:'long',year:'numeric',month:'long',day:'numeric'});
+  const body={
+    system_instruction:{parts:[{text:`You are a helpful AI assistant embedded in WonderStart, a personal browser start page. Today's date is ${today}. Always use this date when asked about the current date or time. Be concise and direct.`}]},
+    contents:currentMessages,
+    generationConfig:{temperature:0.7,maxOutputTokens:2000}
+  };
 
   try{
     const res=await fetch(url,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
