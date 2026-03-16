@@ -180,15 +180,15 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'DM San
   <div class="panel">
     <div id="s1">
       <div class="step-tag">Step 1 of 3 — AI engine</div>
-      <h2>Get your Gemini key</h2>
-      <p class="sub">Free: 1,500 requests/day. No credit card needed.</p>
+      <h2>OpenRouter API key</h2>
+      <p class="sub">Free access to Qwen3, Llama 4 and more. No credit card needed.</p>
       <div class="instructions"><ol>
-        <li>Go to <a href="https://aistudio.google.com/apikey" target="_blank">aistudio.google.com/apikey</a></li>
-        <li>Click <strong style="color:var(--text)">Get API key → Create API key</strong></li>
-        <li>Copy the key (starts with <code>AIza</code>) and paste below</li>
+        <li>Go to <a href="https://openrouter.ai/keys" target="_blank">openrouter.ai/keys</a></li>
+        <li>Sign up free (no credit card) → click <strong style="color:var(--text)">Create Key</strong></li>
+        <li>Copy the key (starts with <code>sk-or-</code>) and paste below</li>
       </ol></div>
       <label class="fl">Gemini API key</label>
-      <input class="fi" type="password" id="s1-key" placeholder="AIzaSy...">
+      <input class="fi" type="password" id="s1-key" placeholder="sk-or-v1-...">
       <div class="er" id="s1-err"></div>
       <button class="bp" onclick="s1Next()">Continue →</button>
     </div>
@@ -234,8 +234,8 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'DM San
   <div class="panel">
     <h2 style="margin-bottom:.3rem">Settings</h2>
     <p class="sub" style="margin-bottom:1.25rem">Update your API keys or sync configuration.</p>
-    <label class="fl">Gemini API key</label>
-    <input class="fi" type="password" id="cfg-gemini" placeholder="AIzaSy...">
+    <label class="fl">OpenRouter API key</label>
+    <input class="fi" type="password" id="cfg-gemini" placeholder="sk-or-v1-...">
     <label class="fl">Serper.dev search key (blank = DuckDuckGo redirect)</label>
     <input class="fi" type="password" id="cfg-brave" placeholder="paste Serper.dev key here">
     <label class="fl">Firebase config JSON (blank = local only)</label>
@@ -336,18 +336,18 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'DM San
 <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore-compat.js"></script>
 <script>
-let mode='ai', geminiKey='', braveKey='', fbConfigObj=null;
+let mode='ai', aiKey='', braveKey='', fbConfigObj=null;
 let streaming=false, currentChatId=null, currentMessages=[], allChats=[];
 let db=null, fbAuth=null, currentUser=null, fbReady=false;
 let pendingImages=[]; // [{base64, mimeType, previewUrl, name}]
 
 // ── BOOT ──────────────────────────────────────────────────
 (function boot(){
-  geminiKey=localStorage.getItem('ws_gemini')||'';
+  aiKey=localStorage.getItem('ws_ai')||localStorage.getItem('ws_gemini')||''; // support old key name
   braveKey=localStorage.getItem('ws_brave')||'';
   const fbStr=localStorage.getItem('ws_fb');
   if(fbStr){try{fbConfigObj=JSON.parse(fbStr);}catch{}}
-  if(!geminiKey){showSetup(1);return;}
+  if(!aiKey){showSetup(1);return;}
   initScrollListener();
   if(fbConfigObj){initFirebase();}else{loadLocal();showMain();}
 })();
@@ -361,8 +361,8 @@ function showMain(){document.getElementById('setup-overlay').classList.add('hidd
 // ── SETUP ─────────────────────────────────────────────────
 function s1Next(){
   const v=document.getElementById('s1-key').value.trim(),e=document.getElementById('s1-err');
-  if(!v.startsWith('AIza')){e.textContent='Key should start with AIza.';return;}
-  localStorage.setItem('ws_gemini',v);geminiKey=v;e.textContent='';showSetup(2);
+  if(!v.startsWith('sk-or')){e.textContent='Key should start with sk-or — copy from openrouter.ai/keys.';return;}
+  localStorage.setItem('ws_ai',v);aiKey=v;e.textContent='';showSetup(2);
 }
 function s2Next(){
   const v=document.getElementById('s2-brave').value.trim();
@@ -696,30 +696,50 @@ async function askGemini(userText, images){
   if(streaming)return;streaming=true;
   if(!currentChatId)currentChatId=genId();
 
-  // Build parts for this turn
+  // Convert message history to OpenAI format (OpenRouter uses this)
+  // Images use base64 content parts
+  const buildContent=(msgs)=>msgs.map(m=>{
+    if(m.role==='model') return{role:'assistant',content:m.parts.map(p=>p.text||'').join('')};
+    // user message — may have images
+    const parts=[];
+    for(const p of m.parts){
+      if(p.inlineData) parts.push({type:'image_url',image_url:{url:`data:${p.inlineData.mimeType};base64,${p.inlineData.data}`}});
+      else if(p.text) parts.push({type:'text',text:p.text});
+    }
+    return{role:'user',content:parts.length===1&&parts[0].type==='text'?parts[0].text:parts};
+  });
+
+  // Build new user message parts
   const parts=[];
   for(const img of images) parts.push({inlineData:{mimeType:img.mimeType,data:img.base64}});
   if(userText) parts.push({text:userText});
-
   currentMessages.push({role:'user',parts});
 
   const bubbleId=addAssistantBubble();
-  const url=`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-pro:streamGenerateContent?key=${geminiKey}&alt=sse`;
   const today=new Date().toLocaleDateString('en-GB',{weekday:'long',year:'numeric',month:'long',day:'numeric'});
+  const sysPrompt=`You are a helpful AI assistant embedded in WonderStart, a personal browser start page. Today's date is ${today}. Always use this date when asked about the current date or time. Search the web when you need current information. Be thorough but concise. When the user asks you to generate, create, or show an image, respond with a markdown image tag: ![detailed description](image) — put a rich detailed description in the alt text.`;
+
   const body={
-    system_instruction:{parts:[{text:`You are a helpful AI assistant embedded in WonderStart, a personal browser start page. Today's date is ${today}. Always use this date when asked about the current date or time. You have access to Google Search — use it to answer questions about current events, recent releases, prices, news, and anything that may have changed recently. Be concise and direct. When the user asks you to generate, create, or show an image, respond with a markdown image tag like: ![detailed description of the image](image) — describe the image in detail in the alt text as it will be used to generate the image.`}]},
-    contents:currentMessages,
-    tools:[{google_search:{}}],
-    generationConfig:{temperature:1,maxOutputTokens:8000}
+    model:'qwen/qwen3-30b-a3b:free',
+    messages:[{role:'system',content:sysPrompt},...buildContent(currentMessages)],
+    stream:true,
+    max_tokens:8000,
+    temperature:0.7
   };
 
   try{
-    const res=await fetch(url,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+    const res=await fetch('https://openrouter.ai/api/v1/chat/completions',{
+      method:'POST',
+      headers:{'Content-Type':'application/json','Authorization':'Bearer '+aiKey,'HTTP-Referer':'https://wonderzb.github.io/start/','X-Title':'WonderStart'},
+      body:JSON.stringify(body)
+    });
     if(!res.ok){
       const err=await res.json().catch(()=>({error:{message:'HTTP '+res.status}}));
       currentMessages.pop();
       const msg=err?.error?.message||'API error '+res.status;
-      updateAssistantBubble(bubbleId,'⚠ '+(res.status===403||res.status===400?'API key rejected — open Settings.\n\n':'')+msg,true);
+      updateAssistantBubble(bubbleId,'⚠ '+(res.status===401?'API key rejected — open Settings.
+
+':'')+msg,true);
       streaming=false;return;
     }
     const reader=res.body.getReader(),dec=new TextDecoder();
@@ -731,7 +751,7 @@ async function askGemini(userText, images){
       for(const line of lines){
         if(!line.startsWith('data:'))continue;
         const data=line.slice(5).trim();if(data==='[DONE]')continue;
-        try{const j=JSON.parse(data);const p=j?.candidates?.[0]?.content?.parts?.[0]?.text;if(p){full+=p;updateAssistantBubble(bubbleId,full,false);}}catch{}
+        try{const j=JSON.parse(data);const p=j?.choices?.[0]?.delta?.content;if(p){full+=p;updateAssistantBubble(bubbleId,full,false);}}catch{}
       }
     }
     updateAssistantBubble(bubbleId,full,true);
@@ -764,7 +784,7 @@ function closeClearDrop(){document.getElementById('clear-drop').classList.remove
 document.addEventListener('click',e=>{if(!e.target.closest('.cw'))closeClearDrop();});
 
 function openSettings(){
-  document.getElementById('cfg-gemini').value=geminiKey;
+  document.getElementById('cfg-gemini').value=aiKey;
   document.getElementById('cfg-brave').value=braveKey;
   document.getElementById('cfg-fb').value=fbConfigObj?JSON.stringify(fbConfigObj):'';
   document.getElementById('cfg-err').textContent='';
@@ -776,8 +796,7 @@ function saveSettings(){
   const bk=document.getElementById('cfg-brave').value.trim();
   const fbs=document.getElementById('cfg-fb').value.trim();
   const err=document.getElementById('cfg-err');
-  if(gk&&!gk.startsWith('AIza')){err.textContent='Gemini key should start with AIza.';return;}
-  if(gk){localStorage.setItem('ws_gemini',gk);geminiKey=gk;}
+  if(gk){localStorage.setItem('ws_ai',gk);aiKey=gk;}
   if(bk){localStorage.setItem('ws_brave',bk);braveKey=bk;}else{localStorage.removeItem('ws_brave');braveKey='';}
   if(fbs){
     let cfg;try{cfg=JSON.parse(fbs);}catch{err.textContent='Firebase config is not valid JSON.';return;}
