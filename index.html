@@ -236,10 +236,8 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'DM San
     <p class="sub" style="margin-bottom:1.25rem">Update your API keys or sync configuration.</p>
     <label class="fl">Gemini API key</label>
     <input class="fi" type="password" id="cfg-gemini" placeholder="AIzaSy...">
-    <label class="fl">Google Search API key (blank = DuckDuckGo redirect)</label>
-    <input class="fi" type="password" id="cfg-gkey" placeholder="AIzaSy...">
-    <label class="fl">Search engine ID / cx</label>
-    <input class="fi" type="text" id="cfg-cx" placeholder="a1b2c3d4e5...">
+    <label class="fl">Search key — Brave (BSA...) or Serper.dev key (blank = DDG redirect)</label>
+    <input class="fi" type="password" id="cfg-brave" placeholder="BSA... or Serper key">
     <label class="fl">Firebase config JSON (blank = local only)</label>
     <input class="fi" type="text" id="cfg-fb" placeholder='{"apiKey":"..."}'>
     <div class="er" id="cfg-err"></div>
@@ -338,7 +336,7 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'DM San
 <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore-compat.js"></script>
 <script>
-let mode='ai', geminiKey='', gSearchKey='', gSearchCx='', fbConfigObj=null;
+let mode='ai', geminiKey='', braveKey='', fbConfigObj=null;
 let streaming=false, currentChatId=null, currentMessages=[], allChats=[];
 let db=null, fbAuth=null, currentUser=null, fbReady=false;
 let pendingImages=[]; // [{base64, mimeType, previewUrl, name}]
@@ -346,8 +344,7 @@ let pendingImages=[]; // [{base64, mimeType, previewUrl, name}]
 // ── BOOT ──────────────────────────────────────────────────
 (function boot(){
   geminiKey=localStorage.getItem('ws_gemini')||'';
-  gSearchKey=localStorage.getItem('ws_gkey')||'';
-  gSearchCx=localStorage.getItem('ws_gcx')||'';
+  braveKey=localStorage.getItem('ws_brave')||'';
   const fbStr=localStorage.getItem('ws_fb');
   if(fbStr){try{fbConfigObj=JSON.parse(fbStr);}catch{}}
   if(!geminiKey){showSetup(1);return;}
