@@ -36,10 +36,10 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'DM San
 .bg:hover{color:var(--text);border-color:var(--muted)}
 
 /* ── APP SHELL ── */
-#app{display:flex;height:100vh;overflow:hidden}
+#app{display:flex;height:100dvh;height:100vh;overflow:hidden;position:fixed;width:100%;top:0;left:0}
 
 /* ── SIDEBAR ── */
-#sidebar{width:var(--sw);flex-shrink:0;background:var(--surface);border-right:1px solid var(--border);display:flex;flex-direction:column;height:100vh;transition:transform .25s ease;z-index:100}
+#sidebar{width:var(--sw);flex-shrink:0;background:var(--surface);border-right:1px solid var(--border);display:flex;flex-direction:column;height:100%;transition:transform .25s ease;z-index:100}
 #sb-top{padding:.85rem;border-bottom:1px solid var(--border)}
 #new-chat-btn{width:100%;padding:.55rem .9rem;background:var(--accent-dim);color:var(--accent);border:1px solid rgba(201,146,42,.25);border-radius:8px;font-family:'IBM Plex Mono',monospace;font-size:.75rem;cursor:pointer;text-align:left;transition:background .15s}
 #new-chat-btn:hover{background:rgba(201,146,42,.2)}
@@ -156,48 +156,24 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'DM San
 #sb-backdrop{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:99}
 
 @media(max-width:768px){
-  /* Sidebar */
-  #sidebar{position:fixed;left:0;top:0;bottom:0;transform:translateX(-100%);z-index:150;width:min(280px,85vw)}
+  #sidebar{position:fixed;left:0;top:0;height:100%;transform:translateX(-100%);z-index:150;width:min(280px,85vw)}
   #sidebar.open{transform:translateX(0)}
   #sb-toggle{display:flex}
   #sb-backdrop.open{display:block}
-
-  /* Mode bar */
   #mode-bar{padding:.6rem .75rem .6rem 3.5rem}
   #mode-bar-title{display:none}
-
-  /* Thread */
-  #thread{padding:1rem .75rem .5rem}
+  #thread{padding:.75rem .75rem .5rem;-webkit-overflow-scrolling:touch}
   .msg{max-width:100%}
-  .bubble{max-width:88%}
-
-  /* Input bar */
-  #input-bar{padding:.6rem .75rem;padding-bottom:max(.6rem,env(safe-area-inset-bottom))}
+  .bubble{max-width:90%;font-size:.9rem}
   .ib-inner{max-width:100%}
   .ib-hint{display:none}
-  #query{font-size:1rem}
-
-  /* Settings button */
-  #settings-btn{bottom:max(5.5rem,calc(5rem + env(safe-area-inset-bottom)));right:.75rem}
-
-  /* Search results */
+  #query{font-size:16px} /* prevent iOS zoom on focus */
+  #settings-btn{bottom:6rem;right:.75rem}
   .ri{flex-direction:column}
-  .ri-thumb{width:100%;height:140px;border-radius:8px 8px 0 0;margin:-.85rem -1.1rem .6rem;width:calc(100% + 2.2rem)}
-
-  /* Overlays */
-  .panel{padding:1.75rem 1.25rem;border-radius:12px}
-
-  /* Bubbles */
-  .msg.user .bubble{font-size:.9rem}
-  .msg.assistant .bubble{font-size:.9rem}
-
-  /* Search image strip */
-  .sr-images img{width:100px;height:68px}
+  .panel{padding:1.5rem 1rem;border-radius:12px}
 }
-
-/* Safe area for notched phones */
-@supports(padding-bottom:env(safe-area-inset-bottom)){
-  #input-bar{padding-bottom:calc(.6rem + env(safe-area-inset-bottom))}
+@supports(height:100dvh){
+  #app{height:100dvh}
 }
 
 /* SETTINGS BTN */
@@ -372,11 +348,12 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'DM San
 
 <input type="file" id="file-input" accept="image/*" multiple style="display:none" onchange="handleFiles(this.files)">
 
+<script src="https://js.puter.com/v2/"></script>
 <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore-compat.js"></script>
 <script>
-let mode='ai', aiKey='', braveKey='', fbConfigObj=null, lastModelUsed='', pendingPollinationsImgs={};
+let mode='ai', aiKey='', braveKey='', fbConfigObj=null, lastModelUsed='', pendingPollinationsImgs={}, pendingPuterImgs={};
 let streaming=false, currentChatId=null, currentMessages=[], allChats=[];
 let db=null, fbAuth=null, currentUser=null, fbReady=false;
 let pendingImages=[]; // [{base64, mimeType, previewUrl, name}]
@@ -396,7 +373,7 @@ function showSetup(n){
   document.getElementById('setup-overlay').classList.remove('hidden');
   [1,2,3].forEach(i=>document.getElementById('s'+i).style.display=i===n?'':'none');
 }
-function showMain(){document.getElementById('setup-overlay').classList.add('hidden');document.getElementById('query').focus();initScrollListener();}
+function showMain(){document.getElementById('setup-overlay').classList.add('hidden');document.getElementById('query').focus();initScrollListener();initViewportHandling();}
 
 // ── SETUP ─────────────────────────────────────────────────
 function s1Next(){
@@ -662,6 +639,26 @@ function addSearchBlock(query, results, images, error){
 function hideEmpty(){document.getElementById('empty')&&document.getElementById('empty').remove();}
 let userScrolledUp=false;
 
+// ── KEYBOARD / VIEWPORT HANDLING (mobile) ──────────────
+function initViewportHandling(){
+  if(!window.visualViewport)return;
+  const bar=document.getElementById('input-bar');
+  const col=document.getElementById('main-col');
+  function onViewportChange(){
+    const vv=window.visualViewport;
+    const offsetBottom=window.innerHeight-(vv.offsetTop+vv.height);
+    // Move input bar up by keyboard height
+    bar.style.transform=offsetBottom>50?'translateY(-'+offsetBottom+'px)':'';
+    // Shrink thread to fill remaining space
+    const barH=bar.offsetHeight;
+    const modeH=document.getElementById('mode-bar').offsetHeight;
+    const avail=vv.height-modeH-barH;
+    col.querySelector('#thread').style.maxHeight=avail+'px';
+  }
+  window.visualViewport.addEventListener('resize',onViewportChange,{passive:true});
+  window.visualViewport.addEventListener('scroll',onViewportChange,{passive:true});
+}
+
 function initScrollListener(){
   const t=document.getElementById('thread');
   if(!t)return;
@@ -688,30 +685,33 @@ function followScroll(){
   t.scrollTop=t.scrollHeight;
 }
 
-function loadPollinationsImages(){
-  if(!pendingPollinationsImgs)return;
-  Object.entries(pendingPollinationsImgs).forEach(([id,src])=>{
+function loadPollinationsImages(){} // legacy no-op
+async function loadPuterImages(){
+  if(!pendingPuterImgs||!Object.keys(pendingPuterImgs).length)return;
+  const entries=Object.entries(pendingPuterImgs);
+  pendingPuterImgs={};
+  for(const [id,desc] of entries){
     const el=document.getElementById(id);
-    if(!el)return;
-    delete pendingPollinationsImgs[id];
-    const img=document.createElement('img');
-    img.style.cssText='max-width:100%;border-radius:12px;display:block;width:100%';
-    img.referrerPolicy='no-referrer';
-    img.crossOrigin='anonymous';
-    img.alt='';
-    img.onload=()=>{el.replaceWith(img);followScroll();};
-    img.onerror=()=>{
-      // retry without crossOrigin (some CDNs reject it)
-      const img2=document.createElement('img');
-      img2.style.cssText=img.style.cssText;
-      img2.referrerPolicy='no-referrer';
-      img2.alt='';
-      img2.onload=()=>{el.replaceWith(img2);followScroll();};
-      img2.onerror=()=>{el.textContent='Image unavailable — try again';el.style.height='auto';el.style.padding='1rem';};
-      img2.src=src+'&t='+Date.now();
-    };
-    img.src=src;
-  });
+    if(!el)continue;
+    (async()=>{
+      try{
+        const response=await puter.ai.txt2img(desc);
+        const img=document.createElement('img');
+        img.style.cssText='max-width:100%;border-radius:12px;display:block;width:100%';
+        img.alt=desc;
+        if(typeof response==='string') img.src=response;
+        else if(response?.src) img.src=response.src;
+        else if(response instanceof HTMLImageElement){el.replaceWith(response);response.style.cssText='max-width:100%;border-radius:12px;display:block;width:100%';followScroll();return;}
+        else img.src=URL.createObjectURL(response);
+        img.onload=()=>{el.replaceWith(img);followScroll();};
+        img.onerror=()=>{el.textContent='Image generation failed';el.style.height='auto';el.style.padding='1rem';};
+      }catch(e){
+        el.textContent='Image unavailable: '+e.message;
+        el.style.height='auto';el.style.padding='1rem';
+        console.error('Puter image error:',e);
+      }
+    })();
+  }
 }
 
 // ── IMAGE ATTACHMENTS ─────────────────────────────────────
@@ -949,11 +949,11 @@ function mdLite(t){
   t=t.replace(/\x00LNK(\d+)\x00/g,(_,i)=>`<a href="${links[i].url}" target="_blank" style="color:var(--accent);text-decoration:underline">${links[i].text}</a>`);
   t=t.replace(/\x00IMG(\d+)\x00/g,(_,i)=>{
     const desc=imgs[i].alt||'abstract art';
-    const seed=Math.floor(Math.random()*99999);
     const cap=desc.length>70?desc.substring(0,70)+'\u2026':desc;
-    const src='https://image.pollinations.ai/prompt/'+encodeURIComponent(desc)+'?nologo=true&seed='+seed;
-    const safeDesc=desc.replace(/"/g,'&quot;');
-    return '<div style="margin:.75rem 0"><img src="'+src+'" referrerpolicy="no-referrer" style="max-width:100%;border-radius:12px;display:block;background:var(--surface2);min-height:80px" alt="'+safeDesc+'"><div style="font-size:.72rem;color:var(--muted);margin-top:.35rem;font-family:IBM Plex Mono,monospace">'+cap+' \u00b7 via pollinations.ai</div></div>';
+    const pid='pimg-'+Date.now()+'-'+i;
+    pendingPuterImgs=pendingPuterImgs||{};
+    pendingPuterImgs[pid]=desc;
+    return '<div style="margin:.75rem 0"><div id="'+pid+'" style="background:var(--surface2);border-radius:12px;height:200px;display:flex;align-items:center;justify-content:center;font-size:.82rem;color:var(--muted);gap:8px"><span style="animation:blink .9s step-end infinite">⬡</span> Generating image…</div><div style="font-size:.72rem;color:var(--muted);margin-top:.35rem;font-family:IBM Plex Mono,monospace">'+cap+' · via puter / flux</div></div>';
   });
   // Rest of markdown
   return t
