@@ -570,6 +570,7 @@ function updateAssistantBubble(id, text, done, modelLabel){
   const label=done&&modelLabel?`<div style="margin-top:.75rem;padding-top:.6rem;border-top:1px solid var(--border);font-family:'IBM Plex Mono',monospace;font-size:.65rem;color:var(--muted)">via ${modelLabel}</div>`:'';
   el.querySelector('.bubble').innerHTML=mdLite(text)+(done?label:'<span class="cursor-blink"></span>');
   followScroll();
+  if(done) loadPollinationsImages();
 }
 
 function addSearchBlock(query, results, error){
@@ -624,10 +625,35 @@ function scrollToNewMessage(){
 }
 
 function followScroll(){
-  // During streaming: keep scrolling only if user hasn't scrolled up
   if(userScrolledUp)return;
   const t=document.getElementById('thread');
   t.scrollTop=t.scrollHeight;
+}
+
+async function loadPollinationsImages(){
+  const phs=document.querySelectorAll('.pollinate-ph[data-desc]');
+  for(const ph of phs){
+    const desc=ph.dataset.desc;
+    const seed=ph.dataset.seed||Math.floor(Math.random()*99999);
+    const url='https://image.pollinations.ai/prompt/'+encodeURIComponent(desc)+'?nologo=true&seed='+seed;
+    ph.removeAttribute('data-desc'); // prevent double-loading
+    (async()=>{
+      try{
+        const res=await fetch(url);
+        if(!res.ok||!res.headers.get('content-type')?.startsWith('image/'))throw new Error('bad response');
+        const blob=await res.blob();
+        const objUrl=URL.createObjectURL(blob);
+        const img=document.createElement('img');
+        img.src=objUrl;
+        img.style.cssText='max-width:100%;border-radius:12px;display:block';
+        ph.replaceWith(img);
+        followScroll();
+      }catch(e){
+        ph.textContent='Image unavailable — try asking again';
+        ph.style.height='auto';ph.style.padding='1rem';
+      }
+    })();
+  }
 }
 
 // ── IMAGE ATTACHMENTS ─────────────────────────────────────
@@ -861,9 +887,9 @@ function mdLite(t){
   t=t.replace(/\x00IMG(\d+)\x00/g,(_,i)=>{
     const desc=imgs[i].alt||'abstract art';
     const seed=Math.floor(Math.random()*99999);
-    const src='https://image.pollinations.ai/prompt/'+encodeURIComponent(desc)+'?nologo=true&seed='+seed;
     const cap=desc.length>70?desc.substring(0,70)+'\u2026':desc;
-    return `<div style="margin:.75rem 0"><img src="${src}" style="max-width:100%;border-radius:12px;display:block" loading="lazy" onerror="this.style.display='none'"><div style="font-size:.72rem;color:var(--muted);margin-top:.35rem;font-family:IBM Plex Mono,monospace">${cap} \u00b7 via pollinations.ai</div></div>`;
+    const safeDesc=desc.replace(/"/g,'&quot;');
+    return `<div class="pollinate-wrap" style="margin:.75rem 0"><div class="pollinate-ph" data-desc="${safeDesc}" data-seed="${seed}" style="background:var(--surface2);border-radius:12px;height:180px;display:flex;align-items:center;justify-content:center;font-size:.8rem;color:var(--muted)">Generating image…</div><div style="font-size:.72rem;color:var(--muted);margin-top:.35rem;font-family:IBM Plex Mono,monospace">${cap} \u00b7 via pollinations.ai</div></div>`;
   });
   // Rest of markdown
   return t
