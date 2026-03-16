@@ -510,6 +510,7 @@ function loadChat(chatId){
   currentMessages=chat.messages?JSON.parse(JSON.stringify(chat.messages)):[];
   renderThread();
   renderSidebar();closeSidebar();
+  const t=document.getElementById('thread');t.scrollTop=t.scrollHeight;
 }
 
 // ── NEW CHAT ──────────────────────────────────────────────
@@ -681,26 +682,31 @@ function submit(){
   askGemini(text,imgs);
 }
 
-function generateImage(prompt){
-  // Strip common prefixes to get clean image description
+async function generateImage(prompt){
   const clean=prompt.replace(/^(can you |please |could you )?(generate|create|make|draw|show me|give me|paint|design|render)\s+(an?\s+)?(image|picture|photo|illustration|drawing|art|artwork|visual|portrait|landscape)\s+(of\s+)?(me\s+)?(a\s+)?/i,'').trim()||prompt;
   hideEmpty();
   const thread=document.getElementById('thread');
   const id='img-'+genId();
   thread.innerHTML+=`<div class="msg assistant" id="${id}"><div class="bubble"><div class="typing-dot"><span></span><span></span><span></span></div></div></div>`;
   scrollToNewMessage();
-  const seed=Math.floor(Math.random()*99999);
-  const src=`https://image.pollinations.ai/prompt/${encodeURIComponent(clean)}?width=800&height=500&nologo=true&seed=${seed}`;
   const el=document.getElementById(id);
-  const img=new Image();
-  img.onload=()=>{
-    el.querySelector('.bubble').innerHTML=`<img src="${src}" alt="${escH(clean)}" style="max-width:100%;border-radius:10px;display:block"><div style="margin-top:.5rem;font-size:.8rem;color:var(--muted)">${escH(clean)}</div><div style="margin-top:.6rem;padding-top:.5rem;border-top:1px solid var(--border);font-family:'IBM Plex Mono',monospace;font-size:.65rem;color:var(--muted)">via pollinations.ai</div>`;
-    followScroll();
-  };
-  img.onerror=()=>{
-    el.querySelector('.bubble').innerHTML=`<span style="color:var(--muted);font-size:.85rem">⚠ Image generation failed — try a different description.</span>`;
-  };
-  img.src=src;
+  // Try up to 3 times with different seeds
+  for(let attempt=0;attempt<3;attempt++){
+    const seed=Math.floor(Math.random()*999999);
+    const src=`https://image.pollinations.ai/prompt/${encodeURIComponent(clean)}?width=800&height=500&nologo=true&seed=${seed}&model=flux`;
+    try{
+      const res=await fetch(src);
+      if(!res.ok||!res.headers.get('content-type')?.startsWith('image/')){
+        if(attempt<2)continue;
+        throw new Error('Not an image response');
+      }
+      const blob=await res.blob();
+      const url=URL.createObjectURL(blob);
+      el.querySelector('.bubble').innerHTML=`<img src="${url}" alt="${escH(clean)}" style="max-width:100%;border-radius:10px;display:block"><div style="margin-top:.5rem;font-size:.8rem;color:var(--muted)">${escH(clean)}</div><div style="margin-top:.6rem;padding-top:.5rem;border-top:1px solid var(--border);font-family:'IBM Plex Mono',monospace;font-size:.65rem;color:var(--muted)">via pollinations.ai (flux)</div>`;
+      followScroll();
+      return;
+    }catch(e){if(attempt===2)el.querySelector('.bubble').innerHTML=`<span style="color:var(--muted);font-size:.85rem">⚠ Image generation failed: ${e.message}. Try rephrasing.</span>`;}
+  }
 }
 
 // ── SERPER SEARCH ─────────────────────────────────────────
