@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>WonderStart</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital@0;1&family=IBM+Plex+Mono:wght@400;500&family=DM+Sans:wght@300;400;500&family=Syne:wght@700&display=swap" rel="stylesheet">
@@ -151,15 +151,53 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'DM San
 .ib-hint{font-size:.68rem;color:var(--muted);text-align:center;font-family:'IBM Plex Mono',monospace}
 .ib-hint kbd{background:var(--surface);border:1px solid var(--border);border-radius:3px;padding:1px 4px;font-size:.65rem}
 
-/* MOBILE */
-#sb-toggle{display:none;position:fixed;top:.9rem;left:.9rem;width:36px;height:36px;border-radius:8px;background:var(--surface);border:1px solid var(--border);cursor:pointer;align-items:center;justify-content:center;z-index:200;color:var(--muted)}
+/* MOBILE TOGGLE */
+#sb-toggle{display:none;position:fixed;top:.75rem;left:.75rem;width:40px;height:40px;border-radius:10px;background:var(--surface);border:1px solid var(--border);cursor:pointer;align-items:center;justify-content:center;z-index:200;color:var(--muted);-webkit-tap-highlight-color:transparent}
 #sb-backdrop{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:99}
+
 @media(max-width:768px){
-  #sidebar{position:fixed;left:0;top:0;transform:translateX(-100%)}
+  /* Sidebar */
+  #sidebar{position:fixed;left:0;top:0;bottom:0;transform:translateX(-100%);z-index:150;width:min(280px,85vw)}
   #sidebar.open{transform:translateX(0)}
   #sb-toggle{display:flex}
   #sb-backdrop.open{display:block}
+
+  /* Mode bar */
+  #mode-bar{padding:.6rem .75rem .6rem 3.5rem}
   #mode-bar-title{display:none}
+
+  /* Thread */
+  #thread{padding:1rem .75rem .5rem}
+  .msg{max-width:100%}
+  .bubble{max-width:88%}
+
+  /* Input bar */
+  #input-bar{padding:.6rem .75rem;padding-bottom:max(.6rem,env(safe-area-inset-bottom))}
+  .ib-inner{max-width:100%}
+  .ib-hint{display:none}
+  #query{font-size:1rem}
+
+  /* Settings button */
+  #settings-btn{bottom:max(5.5rem,calc(5rem + env(safe-area-inset-bottom)));right:.75rem}
+
+  /* Search results */
+  .ri{flex-direction:column}
+  .ri-thumb{width:100%;height:140px;border-radius:8px 8px 0 0;margin:-.85rem -1.1rem .6rem;width:calc(100% + 2.2rem)}
+
+  /* Overlays */
+  .panel{padding:1.75rem 1.25rem;border-radius:12px}
+
+  /* Bubbles */
+  .msg.user .bubble{font-size:.9rem}
+  .msg.assistant .bubble{font-size:.9rem}
+
+  /* Search image strip */
+  .sr-images img{width:100px;height:68px}
+}
+
+/* Safe area for notched phones */
+@supports(padding-bottom:env(safe-area-inset-bottom)){
+  #input-bar{padding-bottom:calc(.6rem + env(safe-area-inset-bottom))}
 }
 
 /* SETTINGS BTN */
@@ -365,10 +403,11 @@ function s1Next(){
   const v=document.getElementById('s1-key').value.trim(),e=document.getElementById('s1-err');
   if(!v||v.length<10){e.textContent='Please paste your full OpenRouter key.';return;}
   localStorage.setItem('ws_ai',v);aiKey=v;e.textContent='';showSetup(2);
+  if(db&&currentUser)db.collection('users').doc(currentUser.uid).set({aiKey:v,updatedAt:Date.now()},{merge:true}).catch(()=>{});
 }
 function s2Next(){
   const v=document.getElementById('s2-brave').value.trim();
-  if(v){localStorage.setItem('ws_brave',v);braveKey=v;}
+  if(v){localStorage.setItem('ws_brave',v);braveKey=v;if(db&&currentUser)db.collection('users').doc(currentUser.uid).set({braveKey:v,updatedAt:Date.now()},{merge:true}).catch(()=>{});}
   showSetup(3);
 }
 function s2Skip(){showSetup(3);}
@@ -403,9 +442,23 @@ function initFirebase(){
 }
 async function loadFirestore(){
   try{
+    // Load saved keys from user profile
+    const profile=await db.collection('users').doc(currentUser.uid).get();
+    if(profile.exists){
+      const d=profile.data();
+      if(d.aiKey&&!aiKey){aiKey=d.aiKey;localStorage.setItem('ws_ai',aiKey);}
+      if(d.braveKey&&!braveKey){braveKey=d.braveKey;localStorage.setItem('ws_brave',braveKey);}
+      if(d.fbConfig&&!fbConfigObj){/* already have firebase */}
+    }
+    // Load chats
     const snap=await db.collection('users').doc(currentUser.uid).collection('chats')
       .orderBy('updatedAt','desc').limit(200).get();
     allChats=snap.docs.map(d=>d.data());renderSidebar();
+    // Update settings UI with loaded keys
+    const gemEl=document.getElementById('cfg-gemini');
+    const bravEl=document.getElementById('cfg-brave');
+    if(gemEl&&aiKey)gemEl.value=aiKey;
+    if(bravEl&&braveKey)bravEl.value=braveKey;
   }catch(e){console.error(e);loadLocal();}
 }
 async function signInGoogle(){
@@ -572,7 +625,6 @@ function updateAssistantBubble(id, text, done, modelLabel){
   const label=done&&modelLabel?`<div style="margin-top:.75rem;padding-top:.6rem;border-top:1px solid var(--border);font-family:'IBM Plex Mono',monospace;font-size:.65rem;color:var(--muted)">via ${modelLabel}</div>`:'';
   el.querySelector('.bubble').innerHTML=mdLite(text)+(done?label:'<span class="cursor-blink"></span>');
   followScroll();
-  if(done) loadPollinationsImages();
 }
 
 function addSearchBlock(query, results, images, error){
@@ -877,6 +929,10 @@ function saveSettings(){
   }else{localStorage.removeItem('ws_fb');fbConfigObj=null;}
   err.textContent='';closeSettings();
   if(fbConfigObj&&!fbReady)initFirebase();
+  // Save keys to Firebase so they sync across devices
+  if(db&&currentUser&&(aiKey||braveKey)){
+    db.collection('users').doc(currentUser.uid).set({aiKey,braveKey,updatedAt:Date.now()},{merge:true}).catch(()=>{});
+  }
 }
 
 function mdLite(t){
@@ -895,10 +951,9 @@ function mdLite(t){
     const desc=imgs[i].alt||'abstract art';
     const seed=Math.floor(Math.random()*99999);
     const cap=desc.length>70?desc.substring(0,70)+'\u2026':desc;
-    const pid='pi-'+seed+'-'+i;
-    pendingPollinationsImgs=pendingPollinationsImgs||{};
-    pendingPollinationsImgs[pid]='https://image.pollinations.ai/prompt/'+encodeURIComponent(desc)+'?nologo=true&seed='+seed;
-    return `<div style="margin:.75rem 0"><div id="${pid}" style="background:var(--surface2);border-radius:12px;height:200px;display:flex;align-items:center;justify-content:center;font-size:.82rem;color:var(--muted)">Generating image…</div><div style="font-size:.72rem;color:var(--muted);margin-top:.35rem;font-family:IBM Plex Mono,monospace">${cap} \u00b7 via pollinations.ai</div></div>`;
+    const src='https://image.pollinations.ai/prompt/'+encodeURIComponent(desc)+'?nologo=true&seed='+seed;
+    const safeDesc=desc.replace(/"/g,'&quot;');
+    return '<div style="margin:.75rem 0"><img src="'+src+'" referrerpolicy="no-referrer" style="max-width:100%;border-radius:12px;display:block;background:var(--surface2);min-height:80px" alt="'+safeDesc+'"><div style="font-size:.72rem;color:var(--muted);margin-top:.35rem;font-family:IBM Plex Mono,monospace">'+cap+' \u00b7 via pollinations.ai</div></div>';
   });
   // Rest of markdown
   return t
