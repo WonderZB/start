@@ -2,6 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
+<meta http-equiv="Content-Security-Policy" content="img-src 'self' https: data: blob:; default-src 'self' https: blob: data:; script-src 'self' 'unsafe-inline' https:; style-src 'self' 'unsafe-inline' https:">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>WonderStart</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -36,7 +37,7 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'DM San
 .bg:hover{color:var(--text);border-color:var(--muted)}
 
 /* ── APP SHELL ── */
-#app{display:flex;height:100dvh;height:100vh;overflow:hidden;position:fixed;width:100%;top:0;left:0}
+#app{display:flex;height:100vh;height:100dvh;overflow:hidden}
 
 /* ── SIDEBAR ── */
 #sidebar{width:var(--sw);flex-shrink:0;background:var(--surface);border-right:1px solid var(--border);display:flex;flex-direction:column;height:100%;transition:transform .25s ease;z-index:100}
@@ -74,10 +75,10 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'DM San
 #main-col{flex:1;display:flex;flex-direction:column;overflow:hidden;position:relative}
 
 /* ── MODE BAR (top) ── */
-#mode-bar{display:flex;align-items:center;justify-content:space-between;padding:.65rem 1.25rem;border-bottom:1px solid var(--border);flex-shrink:0}
+#mode-bar{display:flex;align-items:center;justify-content:center;padding:.65rem 1.25rem;border-bottom:1px solid var(--border);flex-shrink:0;position:relative}
 .mode-btn{padding:.3rem .95rem;border:none;border-radius:6px;font-family:'IBM Plex Mono',monospace;font-size:.73rem;letter-spacing:.04em;cursor:pointer;transition:background .15s,color .15s;background:transparent;color:var(--muted)}
 .mode-btn.active{background:var(--accent-dim);color:var(--accent)}
-#mode-bar-title{font-family:'Syne',sans-serif;font-size:.85rem;font-weight:700;letter-spacing:.05em;color:var(--muted);white-space:nowrap}
+#mode-bar-title{font-family:'Syne',sans-serif;font-size:.85rem;font-weight:700;letter-spacing:.05em;color:var(--muted);white-space:nowrap;position:absolute;left:1.25rem}
 #mode-bar .modes{display:flex;gap:3px;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:3px}
 
 /* ── THREAD ── */
@@ -91,7 +92,7 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'DM San
 .ws{font-size:.8rem;color:var(--muted);opacity:.6;font-family:'IBM Plex Mono',monospace}
 
 /* MESSAGE BUBBLES */
-.msg{display:flex;gap:.75rem;max-width:720px;width:100%;margin:0 auto}
+.msg{display:flex;gap:.75rem;max-width:640px;width:100%;margin:0 auto}
 .msg.user{justify-content:flex-end}
 .msg.assistant{justify-content:flex-start}
 .bubble{padding:.85rem 1.1rem;border-radius:14px;font-size:.93rem;line-height:1.72;max-width:82%;word-break:break-word}
@@ -105,7 +106,7 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'DM San
 @keyframes td{0%,80%,100%{transform:scale(.7);opacity:.4}40%{transform:scale(1);opacity:1}}
 
 /* SEARCH RESULTS IN THREAD */
-.search-result-block{max-width:720px;width:100%;margin:0 auto}
+.search-result-block{max-width:620px;width:100%;margin:0 auto}
 .sr-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:.75rem;flex-wrap:wrap;gap:.5rem}
 .sr-label{font-family:'IBM Plex Mono',monospace;font-size:.69rem;color:var(--accent);letter-spacing:.08em;text-transform:uppercase}
 .sr-right{display:flex;gap:.5rem;align-items:center}
@@ -160,20 +161,20 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'DM San
   #sidebar.open{transform:translateX(0)}
   #sb-toggle{display:flex}
   #sb-backdrop.open{display:block}
-  #mode-bar{padding:.6rem .75rem .6rem 3.5rem}
+  #mode-bar{padding:.55rem .75rem .55rem 3.5rem;justify-content:flex-end}
   #mode-bar-title{display:none}
-  #thread{padding:.75rem .75rem .5rem;-webkit-overflow-scrolling:touch}
+  #main-col{min-height:0;height:100%}
+  #thread{padding:.75rem .75rem .5rem;-webkit-overflow-scrolling:touch;flex:1;min-height:0}
   .msg{max-width:100%}
-  .bubble{max-width:90%;font-size:.9rem}
+  .bubble{max-width:92%;font-size:.9rem}
+  #input-bar{flex-shrink:0;padding:.5rem .75rem env(safe-area-inset-bottom,.5rem)}
   .ib-inner{max-width:100%}
   .ib-hint{display:none}
-  #query{font-size:16px} /* prevent iOS zoom on focus */
-  #settings-btn{bottom:6rem;right:.75rem}
+  #query{font-size:16px}
+  #settings-btn{display:none}
   .ri{flex-direction:column}
   .panel{padding:1.5rem 1rem;border-radius:12px}
-}
-@supports(height:100dvh){
-  #app{height:100dvh}
+  .results-grid{gap:.45rem}
 }
 
 /* SETTINGS BTN */
@@ -348,7 +349,6 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'DM San
 
 <input type="file" id="file-input" accept="image/*" multiple style="display:none" onchange="handleFiles(this.files)">
 
-<script src="https://js.puter.com/v2/"></script>
 <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore-compat.js"></script>
@@ -639,25 +639,8 @@ function addSearchBlock(query, results, images, error){
 function hideEmpty(){document.getElementById('empty')&&document.getElementById('empty').remove();}
 let userScrolledUp=false;
 
-// ── KEYBOARD / VIEWPORT HANDLING (mobile) ──────────────
-function initViewportHandling(){
-  if(!window.visualViewport)return;
-  const bar=document.getElementById('input-bar');
-  const col=document.getElementById('main-col');
-  function onViewportChange(){
-    const vv=window.visualViewport;
-    const offsetBottom=window.innerHeight-(vv.offsetTop+vv.height);
-    // Move input bar up by keyboard height
-    bar.style.transform=offsetBottom>50?'translateY(-'+offsetBottom+'px)':'';
-    // Shrink thread to fill remaining space
-    const barH=bar.offsetHeight;
-    const modeH=document.getElementById('mode-bar').offsetHeight;
-    const avail=vv.height-modeH-barH;
-    col.querySelector('#thread').style.maxHeight=avail+'px';
-  }
-  window.visualViewport.addEventListener('resize',onViewportChange,{passive:true});
-  window.visualViewport.addEventListener('scroll',onViewportChange,{passive:true});
-}
+// keyboard handling — CSS dvh does most of the work
+function initViewportHandling(){}
 
 function initScrollListener(){
   const t=document.getElementById('thread');
@@ -800,7 +783,7 @@ async function doSearch(query){
     const res=await fetch('https://google.serper.dev/search',{
       method:'POST',
       headers:{'X-API-KEY':braveKey,'Content-Type':'application/json'},
-      body:JSON.stringify({q:query,num:6})
+      body:JSON.stringify({q:query,num:6,gl:'us'})
     });
     if(!res.ok){
       const msg=res.status===401?'Invalid Serper key — update in Settings ⚙.':`Search error ${res.status}`;
@@ -950,10 +933,10 @@ function mdLite(t){
   t=t.replace(/\x00IMG(\d+)\x00/g,(_,i)=>{
     const desc=imgs[i].alt||'abstract art';
     const cap=desc.length>70?desc.substring(0,70)+'\u2026':desc;
-    const pid='pimg-'+Date.now()+'-'+i;
-    pendingPuterImgs=pendingPuterImgs||{};
-    pendingPuterImgs[pid]=desc;
-    return '<div style="margin:.75rem 0"><div id="'+pid+'" style="background:var(--surface2);border-radius:12px;height:200px;display:flex;align-items:center;justify-content:center;font-size:.82rem;color:var(--muted);gap:8px"><span style="animation:blink .9s step-end infinite">⬡</span> Generating image…</div><div style="font-size:.72rem;color:var(--muted);margin-top:.35rem;font-family:IBM Plex Mono,monospace">'+cap+' · via puter / flux</div></div>';
+    const seed=Math.floor(Math.random()*99999);
+    const url='https://image.pollinations.ai/prompt/'+encodeURIComponent(desc)+'?nologo=true&seed='+seed;
+    const safeAlt=desc.replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+    return `<div style="margin:.75rem 0"><img src="${url}" style="max-width:100%;border-radius:12px;display:block;min-height:80px;background:var(--surface2)" alt="${safeAlt}" loading="lazy" referrerpolicy="no-referrer"><div style="font-size:.72rem;color:var(--muted);margin-top:.35rem;font-family:IBM Plex Mono,monospace">${cap} · via pollinations.ai</div></div>`;
   });
   // Rest of markdown
   return t
