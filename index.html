@@ -176,7 +176,7 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'DM San
 <body>
 
 <!-- SETUP -->
-<div class="overlay" id="setup-overlay">
+<div class="overlay hidden" id="setup-overlay">
   <div class="panel">
     <div id="s1">
       <div class="step-tag">Step 1 of 3 — AI engine</div>
@@ -675,12 +675,6 @@ function submit(){
   const imgs=[...pendingImages];
   pendingImages=[];renderAttachPreview();
   addUserBubble(text,imgs);
-  // Intercept image generation requests — go straight to Pollinations
-  const imgRx=/(generat|creat|draw|paint|render|design).{0,30}(image|picture|photo|art|illustration|portrait|landscape)/i;
-  if(!imgs.length&&imgRx.test(text)){
-    generateImage(text);
-    return;
-  }
   askGemini(text,imgs);
 }
 
@@ -760,7 +754,7 @@ async function askGemini(userText, images){
 
   const bubbleId=addAssistantBubble();
   const today=new Date().toLocaleDateString('en-GB',{weekday:'long',year:'numeric',month:'long',day:'numeric'});
-  const sysPrompt=`You are a helpful AI assistant embedded in WonderStart, a personal browser start page. Today's date is ${today}. Always use this date when asked about the current date or time. Search the web when you need current information. Be thorough but concise. When the user asks you to generate, create, or show an image, respond with a markdown image tag: ![detailed description](image) — put a rich detailed description in the alt text.`;
+  const sysPrompt=`You are a helpful AI assistant embedded in WonderStart, a personal browser start page. Today's date is ${today}. Always use this date when asked about the current date or time. Search the web when you need current information. Be thorough but concise. You can generate images. When the user asks for an image, or when showing an image would help, include [IMG:detailed description of the image] in your response. Be very descriptive in the image prompt. You can include multiple [IMG:...] tags. When the user asks to modify a previous image, generate a new [IMG:...] with the updated description. This works naturally in conversation.`;
 
   const body={
     model:'openrouter/free',
@@ -855,17 +849,20 @@ function saveSettings(){
 function mdLite(t){
   // Extract links/images before HTML-escaping so URLs survive
   const links=[], imgs=[];
-  t=t.replace(/!\[([^\]]*)\]\(([^)]+)\)/g,(_,alt,url)=>{imgs.push({alt,url});return'\x00IMG'+(imgs.length-1)+'\x00';});
+  // Extract [IMG:description] tags from AI output
+  t=t.replace(/\[IMG:([^\]]+)\]/gi,(_,desc)=>{imgs.push({alt:desc,url:''});return'\x00IMG'+(imgs.length-1)+'\x00';});
+  // Also handle legacy ![alt](url) markdown images
+  t=t.replace(/!\[([^\]]*)\]\(([^)]+)\)/g,(_,alt,url)=>{if(alt||url)imgs.push({alt:alt||url,url});return'\x00IMG'+(imgs.length-1)+'\x00';});
   t=t.replace(/\[([^\]]+)\]\(([^)]+)\)/g,(_,text,url)=>{links.push({text,url});return'\x00LNK'+(links.length-1)+'\x00';});
   // HTML escape
   t=t.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
   // Restore links and images
   t=t.replace(/\x00LNK(\d+)\x00/g,(_,i)=>`<a href="${links[i].url}" target="_blank" style="color:var(--accent);text-decoration:underline">${links[i].text}</a>`);
   t=t.replace(/\x00IMG(\d+)\x00/g,(_,i)=>{
-    // Use Pollinations.ai to generate a real image from the alt text / prompt
-    const prompt=encodeURIComponent(imgs[i].alt||imgs[i].url||'abstract art');
-    const src=`https://image.pollinations.ai/prompt/${prompt}?width=800&height=500&nologo=true&seed=${Math.floor(Math.random()*99999)}`;
-    return `<img src="${src}" alt="${imgs[i].alt}" style="max-width:100%;border-radius:10px;margin:.5rem 0;display:block" loading="lazy" onerror="this.style.display='none'">`;
+    const prompt=encodeURIComponent(imgs[i].alt||'abstract art');
+    const seed=Math.floor(Math.random()*999999);
+    const src=`https://image.pollinations.ai/prompt/${prompt}?width=800&height=520&nologo=true&seed=${seed}&model=flux`;
+    return `<div style="margin:.75rem 0"><img src="${src}" alt="${imgs[i].alt}" style="max-width:100%;border-radius:12px;display:block" loading="lazy" onerror="this.parentElement.innerHTML='<span style=color:var(--muted);font-size:.82rem>Image unavailable</span>'"><div style="font-size:.72rem;color:var(--muted);margin-top:.35rem;font-family:IBM Plex Mono,monospace">via pollinations.ai · ${imgs[i].alt.substring(0,60)}${imgs[i].alt.length>60?'…':''}</div></div>`;
   });
   // Rest of markdown
   return t
