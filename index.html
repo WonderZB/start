@@ -659,6 +659,8 @@ function renderAttachPreview(){
 function removeImage(i){pendingImages.splice(i,1);renderAttachPreview();}
 
 // ── SUBMIT ────────────────────────────────────────────────
+const IMAGE_TRIGGERS=/(generate|create|make|draw|show|give me|paint|design|render).{0,40}(image|picture|photo|illustration|drawing|art|artwork|visual|portrait|landscape)/i;
+
 function submit(){
   const text=document.getElementById('query').value.trim();
   if((!text&&!pendingImages.length)||streaming)return;
@@ -671,7 +673,34 @@ function submit(){
   const imgs=[...pendingImages];
   pendingImages=[];renderAttachPreview();
   addUserBubble(text,imgs);
+  // Intercept image generation requests — go straight to Pollinations
+  if(IMAGE_TRIGGERS.test(text)&&!imgs.length){
+    generateImage(text);
+    return;
+  }
   askGemini(text,imgs);
+}
+
+function generateImage(prompt){
+  // Strip common prefixes to get clean image description
+  const clean=prompt.replace(/^(can you |please |could you )?(generate|create|make|draw|show me|give me|paint|design|render)\s+(an?\s+)?(image|picture|photo|illustration|drawing|art|artwork|visual|portrait|landscape)\s+(of\s+)?(me\s+)?(a\s+)?/i,'').trim()||prompt;
+  hideEmpty();
+  const thread=document.getElementById('thread');
+  const id='img-'+genId();
+  thread.innerHTML+=`<div class="msg assistant" id="${id}"><div class="bubble"><div class="typing-dot"><span></span><span></span><span></span></div></div></div>`;
+  scrollToNewMessage();
+  const seed=Math.floor(Math.random()*99999);
+  const src=`https://image.pollinations.ai/prompt/${encodeURIComponent(clean)}?width=800&height=500&nologo=true&seed=${seed}`;
+  const el=document.getElementById(id);
+  const img=new Image();
+  img.onload=()=>{
+    el.querySelector('.bubble').innerHTML=`<img src="${src}" alt="${escH(clean)}" style="max-width:100%;border-radius:10px;display:block"><div style="margin-top:.5rem;font-size:.8rem;color:var(--muted)">${escH(clean)}</div><div style="margin-top:.6rem;padding-top:.5rem;border-top:1px solid var(--border);font-family:'IBM Plex Mono',monospace;font-size:.65rem;color:var(--muted)">via pollinations.ai</div>`;
+    followScroll();
+  };
+  img.onerror=()=>{
+    el.querySelector('.bubble').innerHTML=`<span style="color:var(--muted);font-size:.85rem">⚠ Image generation failed — try a different description.</span>`;
+  };
+  img.src=src;
 }
 
 // ── SERPER SEARCH ─────────────────────────────────────────
