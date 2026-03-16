@@ -505,7 +505,7 @@ function loadChat(chatId){
   currentMessages=chat.messages?JSON.parse(JSON.stringify(chat.messages)):[];
   renderThread();
   renderSidebar();closeSidebar();
-  scrollThread();
+  scrollToTop();
 }
 
 // ── NEW CHAT ──────────────────────────────────────────────
@@ -548,7 +548,7 @@ function addUserBubble(text, images){
   if(images&&images.length) inner+=images.map(img=>`<img class="msg-img" src="${img.previewUrl}" alt="">`).join('');
   if(text) inner+=`<div>${escH(text)}</div>`;
   thread.innerHTML+=`<div class="msg user"><div class="bubble">${inner}</div></div>`;
-  scrollThread();
+  scrollThread(true);
 }
 
 function addAssistantBubble(){
@@ -556,7 +556,7 @@ function addAssistantBubble(){
   const thread=document.getElementById('thread');
   const id='ai-'+genId();
   thread.innerHTML+=`<div class="msg assistant" id="${id}"><div class="bubble"><div class="typing-dot"><span></span><span></span><span></span></div></div></div>`;
-  scrollThread();
+  scrollThread(true);
   return id;
 }
 
@@ -596,7 +596,15 @@ function addSearchBlock(query, results, error){
 }
 
 function hideEmpty(){document.getElementById('empty')&&document.getElementById('empty').remove();}
-function scrollThread(){const t=document.getElementById('thread');t.scrollTop=t.scrollHeight;}
+function scrollThread(force){
+  const t=document.getElementById('thread');
+  const nearBottom=t.scrollHeight-t.scrollTop-t.clientHeight<120;
+  if(force||nearBottom) t.scrollTop=t.scrollHeight;
+}
+function scrollToTop(){
+  const t=document.getElementById('thread');
+  t.scrollTop=0;
+}
 
 // ── IMAGE ATTACHMENTS ─────────────────────────────────────
 function triggerFile(){document.getElementById('file-input').click();}
@@ -654,7 +662,7 @@ async function doSearch(query){
     const res=await fetch('https://google.serper.dev/search',{
       method:'POST',
       headers:{'X-API-KEY':braveKey,'Content-Type':'application/json'},
-      body:JSON.stringify({q:query,num:10})
+      body:JSON.stringify({q:query,num:6})
     });
     if(!res.ok){
       const msg=res.status===401?'Invalid Serper key — update in Settings ⚙.':`Search error ${res.status}`;
@@ -682,7 +690,7 @@ async function askGemini(userText, images){
   const url=`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:streamGenerateContent?key=${geminiKey}&alt=sse`;
   const today=new Date().toLocaleDateString('en-GB',{weekday:'long',year:'numeric',month:'long',day:'numeric'});
   const body={
-    system_instruction:{parts:[{text:`You are a helpful AI assistant embedded in WonderStart, a personal browser start page. Today's date is ${today}. Always use this date when asked about the current date or time. You have access to Google Search — use it to answer questions about current events, recent releases, prices, news, and anything that may have changed recently. Be concise and direct.`}]},
+    system_instruction:{parts:[{text:`You are a helpful AI assistant embedded in WonderStart, a personal browser start page. Today's date is ${today}. Always use this date when asked about the current date or time. You have access to Google Search — use it to answer questions about current events, recent releases, prices, news, and anything that may have changed recently. Be concise and direct. When the user asks you to generate, create, or show an image, respond with a markdown image tag like: ![detailed description of the image](image) — describe the image in detail in the alt text as it will be used to generate the image.`}]},
     contents:currentMessages,
     tools:[{google_search:{}}],
     generationConfig:{temperature:0.7,maxOutputTokens:2000}
@@ -764,8 +772,22 @@ function saveSettings(){
 }
 
 function mdLite(t){
+  // Extract links/images before HTML-escaping so URLs survive
+  const links=[], imgs=[];
+  t=t.replace(/!\[([^\]]*)\]\(([^)]+)\)/g,(_,alt,url)=>{imgs.push({alt,url});return'\x00IMG'+(imgs.length-1)+'\x00';});
+  t=t.replace(/\[([^\]]+)\]\(([^)]+)\)/g,(_,text,url)=>{links.push({text,url});return'\x00LNK'+(links.length-1)+'\x00';});
+  // HTML escape
+  t=t.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  // Restore links and images
+  t=t.replace(/\x00LNK(\d+)\x00/g,(_,i)=>`<a href="${links[i].url}" target="_blank" style="color:var(--accent);text-decoration:underline">${links[i].text}</a>`);
+  t=t.replace(/\x00IMG(\d+)\x00/g,(_,i)=>{
+    // Use Pollinations.ai to generate a real image from the alt text / prompt
+    const prompt=encodeURIComponent(imgs[i].alt||imgs[i].url||'abstract art');
+    const src=`https://image.pollinations.ai/prompt/${prompt}?width=800&height=500&nologo=true&seed=${Math.floor(Math.random()*99999)}`;
+    return `<img src="${src}" alt="${imgs[i].alt}" style="max-width:100%;border-radius:10px;margin:.5rem 0;display:block" loading="lazy" onerror="this.style.display='none'">`;
+  });
+  // Rest of markdown
   return t
-    .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
     .replace(/`([^`]+)`/g,'<code class="md-code">$1</code>')
     .replace(/\*\*(.+?)\*\*/g,'<strong>$1</strong>')
     .replace(/^### (.+)$/gm,'<div class="md-h3">$1</div>')
