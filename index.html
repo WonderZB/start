@@ -336,7 +336,7 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'DM San
 <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore-compat.js"></script>
 <script>
-let mode='ai', aiKey='', braveKey='', fbConfigObj=null;
+let mode='ai', aiKey='', braveKey='', fbConfigObj=null, lastModelUsed='';
 let streaming=false, currentChatId=null, currentMessages=[], allChats=[];
 let db=null, fbAuth=null, currentUser=null, fbReady=false;
 let pendingImages=[]; // [{base64, mimeType, previewUrl, name}]
@@ -563,10 +563,11 @@ function addAssistantBubble(){
   return id;
 }
 
-function updateAssistantBubble(id, text, done){
+function updateAssistantBubble(id, text, done, modelLabel){
   const el=document.getElementById(id);
   if(!el)return;
-  el.querySelector('.bubble').innerHTML=mdLite(text)+(done?'':'<span class="cursor-blink"></span>');
+  const label=done&&modelLabel?`<div style="margin-top:.75rem;padding-top:.6rem;border-top:1px solid var(--border);font-family:'IBM Plex Mono',monospace;font-size:.65rem;color:var(--muted)">via ${modelLabel}</div>`:'';
+  el.querySelector('.bubble').innerHTML=mdLite(text)+(done?label:'<span class="cursor-blink"></span>');
   followScroll();
 }
 
@@ -725,7 +726,7 @@ async function askGemini(userText, images){
   const sysPrompt=`You are a helpful AI assistant embedded in WonderStart, a personal browser start page. Today's date is ${today}. Always use this date when asked about the current date or time. Search the web when you need current information. Be thorough but concise. When the user asks you to generate, create, or show an image, respond with a markdown image tag: ![detailed description](image) — put a rich detailed description in the alt text.`;
 
   const body={
-    model:'openrouter/free',
+    model:'deepseek/deepseek-r1:free',
     messages:[{role:'system',content:sysPrompt},...buildContent(currentMessages)],
     stream:true,
     max_tokens:8000,
@@ -754,10 +755,13 @@ async function askGemini(userText, images){
       for(const line of lines){
         if(!line.startsWith('data:'))continue;
         const data=line.slice(5).trim();if(data==='[DONE]')continue;
-        try{const j=JSON.parse(data);const p=j?.choices?.[0]?.delta?.content;if(p){full+=p;updateAssistantBubble(bubbleId,full,false);}}catch{}
+        try{const j=JSON.parse(data);const p=j?.choices?.[0]?.delta?.content;if(p){full+=p;updateAssistantBubble(bubbleId,full,false);}if(j?.model)lastModelUsed=j.model;}catch{}
       }
     }
-    updateAssistantBubble(bubbleId,full,true);
+    // Show which model actually responded
+    const modelUsed=lastModelUsed||'deepseek/deepseek-r1:free';
+    const modelLabel=modelUsed.split('/').pop().replace(':free','');
+    updateAssistantBubble(bubbleId,full,true,modelLabel);
     currentMessages.push({role:'model',parts:[{text:full}]});
     const title=(userText||'Image').length>60?(userText||'Image').substring(0,57)+'…':(userText||'Image');
     await persistChat({id:currentChatId,title,messages:currentMessages,
