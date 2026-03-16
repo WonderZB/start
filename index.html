@@ -742,9 +742,7 @@ async function askGemini(userText, images){
       const err=await res.json().catch(()=>({error:{message:'HTTP '+res.status}}));
       currentMessages.pop();
       const msg=err?.error?.message||'API error '+res.status;
-      updateAssistantBubble(bubbleId,'⚠ '+(res.status===401?'API key rejected — open Settings.
-
-':'')+msg,true);
+      updateAssistantBubble(bubbleId,'⚠ '+(res.status===401?'API key rejected — open Settings.\n\n':'')+msg,true);
       streaming=false;return;
     }
     const reader=res.body.getReader(),dec=new TextDecoder();
