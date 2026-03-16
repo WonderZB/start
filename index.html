@@ -505,7 +505,6 @@ function loadChat(chatId){
   currentMessages=chat.messages?JSON.parse(JSON.stringify(chat.messages)):[];
   renderThread();
   renderSidebar();closeSidebar();
-  scrollToTop();
 }
 
 // ── NEW CHAT ──────────────────────────────────────────────
@@ -548,7 +547,7 @@ function addUserBubble(text, images){
   if(images&&images.length) inner+=images.map(img=>`<img class="msg-img" src="${img.previewUrl}" alt="">`).join('');
   if(text) inner+=`<div>${escH(text)}</div>`;
   thread.innerHTML+=`<div class="msg user"><div class="bubble">${inner}</div></div>`;
-  scrollThread(true);
+  scrollToLastUserMsg();
 }
 
 function addAssistantBubble(){
@@ -556,7 +555,6 @@ function addAssistantBubble(){
   const thread=document.getElementById('thread');
   const id='ai-'+genId();
   thread.innerHTML+=`<div class="msg assistant" id="${id}"><div class="bubble"><div class="typing-dot"><span></span><span></span><span></span></div></div></div>`;
-  scrollThread(true);
   return id;
 }
 
@@ -564,7 +562,6 @@ function updateAssistantBubble(id, text, done){
   const el=document.getElementById(id);
   if(!el)return;
   el.querySelector('.bubble').innerHTML=mdLite(text)+(done?'':'<span class="cursor-blink"></span>');
-  scrollThread();
 }
 
 function addSearchBlock(query, results, error){
@@ -592,18 +589,18 @@ function addSearchBlock(query, results, error){
       </div>`).join('')}</div>`;
   }
   thread.innerHTML+=`<div class="search-result-block">${inner}</div>`;
-  scrollThread();
+  scrollToLastUserMsg();
 }
 
 function hideEmpty(){document.getElementById('empty')&&document.getElementById('empty').remove();}
-function scrollThread(force){
+function scrollToLastUserMsg(){
+  // Scroll thread so the last user bubble is near the top of the viewport
   const t=document.getElementById('thread');
-  const nearBottom=t.scrollHeight-t.scrollTop-t.clientHeight<120;
-  if(force||nearBottom) t.scrollTop=t.scrollHeight;
-}
-function scrollToTop(){
-  const t=document.getElementById('thread');
-  t.scrollTop=0;
+  const userMsgs=t.querySelectorAll('.msg.user');
+  if(!userMsgs.length)return;
+  const last=userMsgs[userMsgs.length-1];
+  const offset=last.offsetTop-16; // 16px breathing room above
+  t.scrollTop=offset;
 }
 
 // ── IMAGE ATTACHMENTS ─────────────────────────────────────
@@ -693,7 +690,7 @@ async function askGemini(userText, images){
     system_instruction:{parts:[{text:`You are a helpful AI assistant embedded in WonderStart, a personal browser start page. Today's date is ${today}. Always use this date when asked about the current date or time. You have access to Google Search — use it to answer questions about current events, recent releases, prices, news, and anything that may have changed recently. Be concise and direct. When the user asks you to generate, create, or show an image, respond with a markdown image tag like: ![detailed description of the image](image) — describe the image in detail in the alt text as it will be used to generate the image.`}]},
     contents:currentMessages,
     tools:[{google_search:{}}],
-    generationConfig:{temperature:0.7,maxOutputTokens:2000}
+    generationConfig:{temperature:1,maxOutputTokens:8000,thinkingConfig:{thinkingBudget:8000}}
   };
 
   try{
