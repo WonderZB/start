@@ -575,7 +575,7 @@ function updateAssistantBubble(id, text, done, modelLabel){
   if(done) loadPollinationsImages();
 }
 
-function addSearchBlock(query, results, error){
+function addSearchBlock(query, results, images, error){
   hideEmpty();
   const thread=document.getElementById('thread');
   const ddgUrl='https://duckduckgo.com/?q='+encodeURIComponent(query);
@@ -592,6 +592,7 @@ function addSearchBlock(query, results, error){
         <a class="open-ddg" href="${ddgUrl}" target="_blank">Open in DuckDuckGo ↗</a>
       </div>
     </div>
+    ${images&&images.length?`<div style="display:flex;gap:.5rem;overflow-x:auto;padding-bottom:.5rem;margin-bottom:.75rem;scrollbar-width:thin">${images.map(img=>`<div onclick="window.open('${escH(img.url||'')}','_blank')" style="flex-shrink:0;cursor:pointer;border-radius:8px;overflow:hidden;width:120px;height:80px;background:var(--surface2)"><img src="${escH(img.src)}" alt="${escH(img.title||'')}" style="width:100%;height:100%;object-fit:cover" onerror="this.parentElement.style.display='none'" loading="lazy"></div>`).join('')}</div>`:''}
     <div class="results-grid">${results.map(r=>`
       <div class="ri" onclick="window.open('${escH(r.url)}','_blank')">
         ${r.thumb?`<img class="ri-thumb" src="${escH(r.thumb)}" alt="" onerror="this.style.display='none'" loading="lazy">`:''}
@@ -643,9 +644,20 @@ function loadPollinationsImages(){
     delete pendingPollinationsImgs[id];
     const img=document.createElement('img');
     img.style.cssText='max-width:100%;border-radius:12px;display:block;width:100%';
+    img.referrerPolicy='no-referrer';
+    img.crossOrigin='anonymous';
     img.alt='';
     img.onload=()=>{el.replaceWith(img);followScroll();};
-    img.onerror=()=>{el.textContent='Image unavailable — try again';el.style.height='auto';el.style.padding='1rem';};
+    img.onerror=()=>{
+      // retry without crossOrigin (some CDNs reject it)
+      const img2=document.createElement('img');
+      img2.style.cssText=img.style.cssText;
+      img2.referrerPolicy='no-referrer';
+      img2.alt='';
+      img2.onload=()=>{el.replaceWith(img2);followScroll();};
+      img2.onerror=()=>{el.textContent='Image unavailable — try again';el.style.height='auto';el.style.padding='1rem';};
+      img2.src=src+'&t='+Date.now();
+    };
     img.src=src;
   });
 }
@@ -729,7 +741,7 @@ async function generateImage(prompt){
 async function doSearch(query){
   if(!query)return;
   if(!braveKey){
-    addSearchBlock(query,null,'No search key — <button class="link" onclick="openSettings()">add one in Settings</button>');
+    addSearchBlock(query,null,null,'No search key — <button class="link" onclick="openSettings()">add one in Settings</button>');
     return;
   }
   try{
@@ -740,12 +752,13 @@ async function doSearch(query){
     });
     if(!res.ok){
       const msg=res.status===401?'Invalid Serper key — update in Settings ⚙.':`Search error ${res.status}`;
-      addSearchBlock(query,null,msg);return;
+      addSearchBlock(query,null,null,msg);return;
     }
     const data=await res.json();
-    const results=(data?.organic||[]).map(r=>({title:r.title,url:r.link,description:r.snippet,thumb:r.imageUrl||''}));
-    addSearchBlock(query,results,null);
-  }catch(e){addSearchBlock(query,null,'Network error: '+e.message);}
+    const results=(data?.organic||[]).map(r=>({title:r.title,url:r.link,description:r.snippet,thumb:r.thumbnail||r.imageUrl||''}));
+    const images=(data?.images||[]).slice(0,8).map(i=>({title:i.title,url:i.link||i.imageUrl,src:i.imageUrl}));
+    addSearchBlock(query,results,images,null);
+  }catch(e){addSearchBlock(query,null,null,'Network error: '+e.message);}
 }
 
 // ── GEMINI ────────────────────────────────────────────────
