@@ -11,31 +11,34 @@
 :root{
   --bg:#0d0e13;--surface:#14151c;--surface2:#1a1b24;--border:#2a2c38;
   --text:#e8e4d8;--muted:#6b6d7d;--accent:#c9922a;--accent-dim:rgba(201,146,42,0.12);
-  --green:#4caf87;--red:#cf5c5c;--radius:10px;--sw:260px;
+  --red:#cf5c5c;--radius:10px;--sw:260px;--ib:80px;
 }
 html,body{height:100%;background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;font-size:15px;line-height:1.6;-webkit-font-smoothing:antialiased}
 
-.overlay{position:fixed;inset:0;background:rgba(0,0,0,0.7);display:flex;align-items:center;justify-content:center;z-index:300;padding:1.5rem;overflow-y:auto}
+/* ── OVERLAYS ── */
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,0.75);display:flex;align-items:center;justify-content:center;z-index:300;padding:1.5rem;overflow-y:auto}
 .overlay.hidden{display:none}
 .panel{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:2.5rem 2rem;width:100%;max-width:460px;margin:auto}
-.panel h2{font-family:'Playfair Display',serif;font-size:1.4rem;margin-bottom:0.35rem}
-.panel .sub{font-size:0.85rem;color:var(--muted);margin-bottom:1.5rem;line-height:1.6}
+.panel h2{font-family:'Playfair Display',serif;font-size:1.4rem;margin-bottom:.35rem}
+.panel .sub{font-size:.85rem;color:var(--muted);margin-bottom:1.5rem;line-height:1.6}
 .panel a{color:var(--accent);text-decoration:none}.panel a:hover{text-decoration:underline}
-.step-tag{font-family:'IBM Plex Mono',monospace;font-size:0.7rem;color:var(--accent);letter-spacing:.07em;text-transform:uppercase;margin-bottom:.5rem}
-.instructions{background:var(--bg);border-radius:var(--radius);padding:1rem;margin-bottom:1.25rem;font-size:0.8rem;color:var(--muted)}
+.step-tag{font-family:'IBM Plex Mono',monospace;font-size:.7rem;color:var(--accent);letter-spacing:.07em;text-transform:uppercase;margin-bottom:.5rem}
+.instructions{background:var(--bg);border-radius:var(--radius);padding:1rem;margin-bottom:1.25rem;font-size:.8rem;color:var(--muted)}
 .instructions ol{padding-left:1.2rem}.instructions li{margin-bottom:.4rem}
 .instructions code{font-family:'IBM Plex Mono',monospace;font-size:.78rem;background:var(--surface);border-radius:4px;padding:1px 5px;color:var(--text)}
-.field-label{display:block;font-size:.78rem;font-family:'IBM Plex Mono',monospace;color:var(--muted);letter-spacing:.05em;text-transform:uppercase;margin-bottom:.45rem}
-.field-input{width:100%;background:var(--bg);border:1px solid var(--border);border-radius:var(--radius);padding:.7rem 1rem;font-family:'IBM Plex Mono',monospace;font-size:.83rem;color:var(--text);outline:none;transition:border-color .15s;margin-bottom:1rem}
-.field-input:focus{border-color:rgba(201,146,42,.4)}
-.err{font-size:.78rem;color:var(--red);min-height:1.1em;margin-bottom:.75rem}
-.btn-primary{width:100%;padding:.8rem;background:var(--accent);color:#0d0e13;font-family:'DM Sans',sans-serif;font-size:.9rem;font-weight:500;border:none;border-radius:var(--radius);cursor:pointer;transition:opacity .15s}
-.btn-primary:hover{opacity:.85}
-.btn-ghost{width:100%;padding:.65rem;background:transparent;color:var(--muted);font-family:'DM Sans',sans-serif;font-size:.85rem;border:1px solid var(--border);border-radius:var(--radius);cursor:pointer;margin-top:.6rem;transition:color .15s,border-color .15s}
-.btn-ghost:hover{color:var(--text);border-color:var(--muted)}
+.fl{display:block;font-size:.78rem;font-family:'IBM Plex Mono',monospace;color:var(--muted);letter-spacing:.05em;text-transform:uppercase;margin-bottom:.45rem}
+.fi{width:100%;background:var(--bg);border:1px solid var(--border);border-radius:var(--radius);padding:.7rem 1rem;font-family:'IBM Plex Mono',monospace;font-size:.83rem;color:var(--text);outline:none;transition:border-color .15s;margin-bottom:1rem}
+.fi:focus{border-color:rgba(201,146,42,.4)}
+.er{font-size:.78rem;color:var(--red);min-height:1.1em;margin-bottom:.75rem}
+.bp{width:100%;padding:.8rem;background:var(--accent);color:#0d0e13;font-family:'DM Sans',sans-serif;font-size:.9rem;font-weight:500;border:none;border-radius:var(--radius);cursor:pointer;transition:opacity .15s}
+.bp:hover{opacity:.85}
+.bg{width:100%;padding:.65rem;background:transparent;color:var(--muted);font-family:'DM Sans',sans-serif;font-size:.85rem;border:1px solid var(--border);border-radius:var(--radius);cursor:pointer;margin-top:.6rem;transition:color .15s,border-color .15s}
+.bg:hover{color:var(--text);border-color:var(--muted)}
 
+/* ── APP SHELL ── */
 #app{display:flex;height:100vh;overflow:hidden}
 
+/* ── SIDEBAR ── */
 #sidebar{width:var(--sw);flex-shrink:0;background:var(--surface);border-right:1px solid var(--border);display:flex;flex-direction:column;height:100vh;transition:transform .25s ease;z-index:100}
 #sb-top{padding:.85rem;border-bottom:1px solid var(--border)}
 #new-chat-btn{width:100%;padding:.55rem .9rem;background:var(--accent-dim);color:var(--accent);border:1px solid rgba(201,146,42,.25);border-radius:8px;font-family:'IBM Plex Mono',monospace;font-size:.75rem;cursor:pointer;text-align:left;transition:background .15s}
@@ -43,17 +46,14 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'DM San
 #chat-list{flex:1;overflow-y:auto;padding:.6rem .45rem}
 #chat-list::-webkit-scrollbar{width:3px}
 #chat-list::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px}
-.group-label{font-size:.67rem;font-family:'IBM Plex Mono',monospace;color:var(--muted);letter-spacing:.07em;text-transform:uppercase;padding:.5rem .5rem .2rem;margin-top:.35rem}
-.chat-item{display:flex;align-items:center;gap:5px;padding:.45rem .55rem;border-radius:7px;cursor:pointer;transition:background .12s}
-.chat-item:hover{background:var(--surface2)}
-.chat-item.active{background:var(--accent-dim)}
-.chat-title{flex:1;font-size:.81rem;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
-.chat-item.active .chat-title{color:var(--accent)}
-.chat-del{display:none;width:18px;height:18px;border:none;background:transparent;color:var(--muted);cursor:pointer;border-radius:4px;font-size:15px;line-height:1;align-items:center;justify-content:center;flex-shrink:0;padding:0}
-.chat-item:hover .chat-del{display:flex}
-.chat-del:hover{color:var(--red)}
-.empty-state{padding:2rem .5rem;font-size:.8rem;color:var(--muted);text-align:center;line-height:1.8}
-
+.gl{font-size:.67rem;font-family:'IBM Plex Mono',monospace;color:var(--muted);letter-spacing:.07em;text-transform:uppercase;padding:.5rem .5rem .2rem;margin-top:.35rem}
+.ci{display:flex;align-items:center;gap:5px;padding:.45rem .55rem;border-radius:7px;cursor:pointer;transition:background .12s}
+.ci:hover{background:var(--surface2)}.ci.active{background:var(--accent-dim)}
+.ct{flex:1;font-size:.81rem;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+.ci.active .ct{color:var(--accent)}
+.cd{display:none;width:18px;height:18px;border:none;background:transparent;color:var(--muted);cursor:pointer;border-radius:4px;font-size:15px;line-height:1;align-items:center;justify-content:center;flex-shrink:0;padding:0}
+.ci:hover .cd{display:flex}.cd:hover{color:var(--red)}
+.es{padding:2rem .5rem;font-size:.8rem;color:var(--muted);text-align:center;line-height:1.8}
 #sb-footer{border-top:1px solid var(--border);padding:.7rem;display:flex;flex-direction:column;gap:.45rem}
 #user-area{display:flex;align-items:center;gap:8px;padding:.4rem .5rem;border-radius:7px;cursor:pointer;transition:background .12s;min-height:38px}
 #user-area:hover{background:var(--surface2)}
@@ -62,18 +62,94 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'DM San
 #user-info{flex:1;min-width:0}
 #user-name{font-size:.81rem;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 #user-sub{font-size:.7rem;color:var(--muted)}
-.sb-btn{width:100%;padding:.42rem .6rem;background:transparent;border:1px solid var(--border);border-radius:7px;font-family:'IBM Plex Mono',monospace;font-size:.7rem;color:var(--muted);cursor:pointer;text-align:left;transition:color .12s,border-color .12s}
-.sb-btn:hover{color:var(--text);border-color:var(--muted)}
-.sb-btn.danger:hover{color:var(--red);border-color:var(--red)}
-.clear-wrap{position:relative}
+.sbb{width:100%;padding:.42rem .6rem;background:transparent;border:1px solid var(--border);border-radius:7px;font-family:'IBM Plex Mono',monospace;font-size:.7rem;color:var(--muted);cursor:pointer;text-align:left;transition:color .12s,border-color .12s}
+.sbb:hover{color:var(--text);border-color:var(--muted)}.sbb.danger:hover{color:var(--red);border-color:var(--red)}
+.cw{position:relative}
 #clear-drop{position:absolute;bottom:calc(100% + 4px);left:0;right:0;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:.35rem;display:none;z-index:50}
 #clear-drop.open{display:block}
-.clear-opt{display:block;width:100%;padding:.4rem .6rem;background:transparent;border:none;border-radius:5px;font-size:.79rem;color:var(--muted);cursor:pointer;text-align:left;transition:background .1s,color .1s}
-.clear-opt:hover{background:var(--border);color:var(--red)}
+.co{display:block;width:100%;padding:.4rem .6rem;background:transparent;border:none;border-radius:5px;font-size:.79rem;color:var(--muted);cursor:pointer;text-align:left;transition:background .1s,color .1s}
+.co:hover{background:var(--border);color:var(--red)}
 
-#main-wrap{flex:1;display:flex;flex-direction:column;align-items:center;overflow-y:auto;padding:0 1rem 4rem}
-#main{width:100%;max-width:680px;display:flex;flex-direction:column;align-items:center;padding-top:min(14vh,120px)}
+/* ── MAIN COLUMN ── */
+#main-col{flex:1;display:flex;flex-direction:column;overflow:hidden;position:relative}
 
+/* ── MODE BAR (top) ── */
+#mode-bar{display:flex;align-items:center;justify-content:center;padding:.75rem 1rem;border-bottom:1px solid var(--border);gap:.5rem;flex-shrink:0}
+.mode-btn{padding:.3rem .95rem;border:none;border-radius:6px;font-family:'IBM Plex Mono',monospace;font-size:.73rem;letter-spacing:.04em;cursor:pointer;transition:background .15s,color .15s;background:transparent;color:var(--muted)}
+.mode-btn.active{background:var(--accent-dim);color:var(--accent)}
+#mode-bar-title{font-family:'Playfair Display',serif;font-size:.9rem;font-style:italic;color:var(--muted);position:absolute;left:50%;transform:translateX(-50%);pointer-events:none}
+#mode-bar .modes{display:flex;gap:3px;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:3px}
+
+/* ── THREAD ── */
+#thread{flex:1;overflow-y:auto;padding:1.5rem 1rem 1rem;display:flex;flex-direction:column;gap:1.25rem}
+#thread::-webkit-scrollbar{width:4px}
+#thread::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px}
+
+/* EMPTY STATE */
+#empty{display:flex;flex-direction:column;align-items:center;justify-content:center;flex:1;gap:.75rem;pointer-events:none;padding-bottom:4rem}
+.wm{font-family:'Playfair Display',serif;font-size:1.5rem;font-style:italic;color:var(--muted)}
+.ws{font-size:.8rem;color:var(--muted);opacity:.6;font-family:'IBM Plex Mono',monospace}
+
+/* MESSAGE BUBBLES */
+.msg{display:flex;gap:.75rem;max-width:720px;width:100%;margin:0 auto}
+.msg.user{justify-content:flex-end}
+.msg.assistant{justify-content:flex-start}
+.bubble{padding:.85rem 1.1rem;border-radius:14px;font-size:.93rem;line-height:1.72;max-width:82%;word-break:break-word}
+.msg.user .bubble{background:var(--surface);border:1px solid var(--border);border-bottom-right-radius:4px;color:var(--text)}
+.msg.assistant .bubble{background:transparent;padding-left:0;padding-right:0;max-width:100%;color:var(--text)}
+.msg.assistant .bubble strong{color:var(--accent);font-weight:500}
+.msg-img{max-width:220px;max-height:180px;border-radius:10px;object-fit:cover;margin-bottom:.4rem;display:block}
+.typing-dot{display:inline-flex;gap:4px;padding:.6rem 0}
+.typing-dot span{width:6px;height:6px;border-radius:50%;background:var(--muted);animation:td .9s infinite}
+.typing-dot span:nth-child(2){animation-delay:.2s}.typing-dot span:nth-child(3){animation-delay:.4s}
+@keyframes td{0%,80%,100%{transform:scale(.7);opacity:.4}40%{transform:scale(1);opacity:1}}
+
+/* SEARCH RESULTS IN THREAD */
+.search-result-block{max-width:720px;width:100%;margin:0 auto}
+.sr-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:.75rem;flex-wrap:wrap;gap:.5rem}
+.sr-label{font-family:'IBM Plex Mono',monospace;font-size:.69rem;color:var(--accent);letter-spacing:.08em;text-transform:uppercase}
+.sr-right{display:flex;gap:.5rem;align-items:center}
+.sr-count{font-size:.72rem;color:var(--muted);font-family:'IBM Plex Mono',monospace}
+.open-ddg{font-size:.72rem;font-family:'IBM Plex Mono',monospace;color:var(--muted);background:transparent;border:1px solid var(--border);border-radius:6px;padding:.28rem .65rem;cursor:pointer;text-decoration:none;transition:color .15s,border-color .15s;display:inline-block}
+.open-ddg:hover{color:var(--text);border-color:var(--muted)}
+.results-grid{display:flex;flex-direction:column;gap:.6rem}
+.ri{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:.85rem 1.1rem;cursor:pointer;transition:border-color .15s}
+.ri:hover{border-color:rgba(201,146,42,.35)}
+.ri-url{font-family:'IBM Plex Mono',monospace;font-size:.67rem;color:var(--muted);margin-bottom:.25rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ri-title{font-size:.88rem;font-weight:500;color:var(--text);margin-bottom:.3rem;line-height:1.35}
+.ri:hover .ri-title{color:var(--accent)}
+.ri-desc{font-size:.8rem;color:var(--muted);line-height:1.5}
+.sr-msg{padding:1.1rem;background:var(--surface);border:1px solid var(--border);border-radius:12px;font-size:.82rem;color:var(--muted);text-align:center}
+.sr-msg a,.sr-msg button.link{color:var(--accent);text-decoration:none;background:transparent;border:none;cursor:pointer;font-size:.82rem;padding:0}
+.sr-msg a:hover,.sr-msg button.link:hover{text-decoration:underline}
+
+/* ── INPUT BAR ── */
+#input-bar{flex-shrink:0;border-top:1px solid var(--border);padding:.75rem 1rem;background:var(--bg)}
+.ib-inner{max-width:720px;margin:0 auto;display:flex;flex-direction:column;gap:.5rem}
+
+/* attachment preview */
+#attach-preview{display:flex;gap:.5rem;flex-wrap:wrap}
+.ap-item{position:relative;width:52px;height:52px;border-radius:8px;overflow:hidden;border:1px solid var(--border);flex-shrink:0}
+.ap-item img{width:100%;height:100%;object-fit:cover}
+.ap-rm{position:absolute;top:2px;right:2px;width:16px;height:16px;border-radius:50%;background:rgba(0,0,0,.7);color:#fff;border:none;cursor:pointer;font-size:11px;line-height:1;display:flex;align-items:center;justify-content:center}
+.ap-file{width:52px;height:52px;border-radius:8px;background:var(--surface2);border:1px solid var(--border);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;position:relative}
+.ap-file-name{font-family:'IBM Plex Mono',monospace;font-size:.55rem;color:var(--muted);text-align:center;padding:0 3px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:48px}
+
+/* text row */
+.ib-row{display:flex;align-items:flex-end;gap:.5rem;background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:.5rem .5rem .5rem .75rem;transition:border-color .15s}
+.ib-row:focus-within{border-color:rgba(201,146,42,.4)}
+#query{flex:1;background:transparent;border:none;outline:none;resize:none;font-family:'DM Sans',sans-serif;font-size:.95rem;font-weight:300;color:var(--text);line-height:1.55;min-height:26px;max-height:180px;overflow-y:auto;padding:.2rem 0}
+#query::placeholder{color:var(--muted)}
+.ib-actions{display:flex;align-items:center;gap:.35rem;flex-shrink:0}
+.ib-icon-btn{width:30px;height:30px;border-radius:7px;background:transparent;border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;color:var(--muted);transition:color .15s,background .15s;flex-shrink:0}
+.ib-icon-btn:hover{color:var(--text);background:var(--surface2)}
+#send-btn{width:30px;height:30px;border-radius:7px;background:var(--accent);border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:opacity .15s,transform .1s;flex-shrink:0}
+#send-btn:hover{opacity:.85}#send-btn:active{transform:scale(.95)}
+#send-btn:disabled{opacity:.35;cursor:default}
+.ib-hint{font-size:.68rem;color:var(--muted);text-align:center;font-family:'IBM Plex Mono',monospace}
+.ib-hint kbd{background:var(--surface);border:1px solid var(--border);border-radius:3px;padding:1px 4px;font-size:.65rem}
+
+/* MOBILE */
 #sb-toggle{display:none;position:fixed;top:.9rem;left:.9rem;width:36px;height:36px;border-radius:8px;background:var(--surface);border:1px solid var(--border);cursor:pointer;align-items:center;justify-content:center;z-index:200;color:var(--muted)}
 #sb-backdrop{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:99}
 @media(max-width:768px){
@@ -81,64 +157,20 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'DM San
   #sidebar.open{transform:translateX(0)}
   #sb-toggle{display:flex}
   #sb-backdrop.open{display:block}
-  #main{padding-top:min(12vh,80px)}
+  #mode-bar-title{display:none}
 }
 
-.wordmark{font-family:'Playfair Display',serif;font-size:1rem;font-style:italic;color:var(--muted);margin-bottom:2.5rem;cursor:pointer;user-select:none;transition:color .15s}
-.wordmark:hover{color:var(--accent)}
-
-.mode-toggle{display:flex;gap:4px;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:3px;margin-bottom:1.25rem}
-.mode-btn{padding:.33rem 1rem;border:none;border-radius:6px;font-family:'IBM Plex Mono',monospace;font-size:.74rem;letter-spacing:.04em;cursor:pointer;transition:background .15s,color .15s;background:transparent;color:var(--muted)}
-.mode-btn.active{background:var(--accent-dim);color:var(--accent)}
-
-.search-wrap{width:100%;position:relative;margin-bottom:1rem}
-#query{width:100%;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:1rem 3.5rem 1rem 1.25rem;font-family:'DM Sans',sans-serif;font-size:1rem;font-weight:300;color:var(--text);outline:none;resize:none;min-height:56px;max-height:240px;overflow-y:auto;transition:border-color .15s;line-height:1.5}
-#query::placeholder{color:var(--muted)}
-#query:focus{border-color:rgba(201,146,42,.4)}
-#submit-btn{position:absolute;right:.75rem;bottom:.75rem;width:32px;height:32px;border-radius:7px;background:var(--accent);border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:opacity .15s,transform .1s}
-#submit-btn:hover{opacity:.85}
-#submit-btn:active{transform:scale(.95)}
-.hint{font-size:.74rem;color:var(--muted);text-align:center}
-.hint kbd{font-family:'IBM Plex Mono',monospace;font-size:.68rem;background:var(--surface);border:1px solid var(--border);border-radius:4px;padding:1px 5px}
-
-#response-wrap{width:100%;margin-top:2rem;opacity:0;transform:translateY(8px);transition:opacity .3s,transform .3s}
-#response-wrap.visible{opacity:1;transform:translateY(0)}
-.response-card{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:1.5rem 1.75rem}
-.response-label{font-family:'IBM Plex Mono',monospace;font-size:.69rem;color:var(--accent);letter-spacing:.08em;text-transform:uppercase;margin-bottom:1rem;display:flex;align-items:center;gap:8px}
-.response-label::after{content:'';flex:1;height:1px;background:var(--border)}
-#response-content{font-size:.94rem;line-height:1.78;color:var(--text);white-space:pre-wrap;word-break:break-word}
-#response-content strong{color:var(--accent);font-weight:500}
-.cursor-blink{display:inline-block;width:2px;height:1em;background:var(--accent);vertical-align:text-bottom;animation:blink .9s step-end infinite;margin-left:1px}
-@keyframes blink{0%,100%{opacity:1}50%{opacity:0}}
-.response-actions{margin-top:1.25rem;padding-top:1rem;border-top:1px solid var(--border);display:flex;gap:.7rem;flex-wrap:wrap}
-.act-btn{font-size:.73rem;font-family:'IBM Plex Mono',monospace;color:var(--muted);background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:.33rem .7rem;cursor:pointer;transition:color .15s,border-color .15s}
-.act-btn:hover{color:var(--text);border-color:var(--muted)}
-.context-note{font-size:.75rem;color:var(--muted);font-family:'IBM Plex Mono',monospace;margin-bottom:.75rem}
-
-#search-wrap{width:100%;margin-top:1.5rem;display:none}
-.search-meta{display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem;flex-wrap:wrap;gap:.5rem}
-.search-meta-label{font-family:'IBM Plex Mono',monospace;font-size:.69rem;color:var(--accent);letter-spacing:.08em;text-transform:uppercase}
-.search-meta-right{display:flex;gap:.5rem;align-items:center}
-.open-ddg{font-size:.72rem;font-family:'IBM Plex Mono',monospace;color:var(--muted);background:transparent;border:1px solid var(--border);border-radius:6px;padding:.28rem .65rem;cursor:pointer;text-decoration:none;transition:color .15s,border-color .15s;display:inline-block}
-.open-ddg:hover{color:var(--text);border-color:var(--muted)}
-.results-list{display:flex;flex-direction:column;gap:.75rem}
-.result-item{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:1rem 1.25rem;cursor:pointer;transition:border-color .15s}
-.result-item:hover{border-color:rgba(201,146,42,.35)}
-.result-url{font-family:'IBM Plex Mono',monospace;font-size:.68rem;color:var(--muted);margin-bottom:.3rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.result-title{font-size:.92rem;font-weight:500;color:var(--text);margin-bottom:.35rem;line-height:1.4}
-.result-item:hover .result-title{color:var(--accent)}
-.result-desc{font-size:.82rem;color:var(--muted);line-height:1.55}
-.search-msg{padding:1.25rem;background:var(--surface);border:1px solid var(--border);border-radius:12px;font-size:.83rem;color:var(--muted);line-height:1.7;text-align:center}
-.search-msg a,.search-msg button[data-link]{color:var(--accent);text-decoration:none;background:transparent;border:none;cursor:pointer;font-size:.83rem;padding:0}
-.search-msg a:hover,.search-msg button[data-link]:hover{text-decoration:underline}
-
-#settings-btn{position:fixed;bottom:1.25rem;right:1.25rem;width:36px;height:36px;border-radius:50%;background:var(--surface);border:1px solid var(--border);cursor:pointer;display:flex;align-items:center;justify-content:center;z-index:10;color:var(--muted);transition:border-color .15s}
+/* SETTINGS BTN */
+#settings-btn{position:fixed;bottom:1.25rem;right:1.25rem;width:32px;height:32px;border-radius:50%;background:var(--surface);border:1px solid var(--border);cursor:pointer;display:flex;align-items:center;justify-content:center;z-index:10;color:var(--muted);transition:border-color .15s}
 #settings-btn:hover{border-color:var(--muted)}
 
-.md-h1,.md-h2,.md-h3{font-family:'Playfair Display',serif;color:var(--text);margin:1.2em 0 .4em}
-.md-h1{font-size:1.25rem}.md-h2{font-size:1.1rem}.md-h3{font-size:1rem}
+/* MARKDOWN */
+.md-h1,.md-h2,.md-h3{font-family:'Playfair Display',serif;color:var(--text);margin:1.1em 0 .35em}
+.md-h1{font-size:1.2rem}.md-h2{font-size:1.05rem}.md-h3{font-size:.97rem}
 .md-li{margin-left:1.2em;margin-bottom:.2em}
-.md-code{font-family:'IBM Plex Mono',monospace;font-size:.82rem;background:var(--bg);border-radius:4px;padding:1px 5px;color:#90c694}
+.md-code{font-family:'IBM Plex Mono',monospace;font-size:.8rem;background:var(--bg);border-radius:4px;padding:1px 5px;color:#90c694}
+.cursor-blink{display:inline-block;width:2px;height:.9em;background:var(--accent);vertical-align:text-bottom;animation:blink .9s step-end infinite;margin-left:1px}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:0}}
 </style>
 </head>
 <body>
@@ -149,52 +181,50 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'DM San
     <div id="s1">
       <div class="step-tag">Step 1 of 3 — AI engine</div>
       <h2>Get your Gemini key</h2>
-      <p class="sub">Free tier: 1,500 requests/day. No credit card needed.</p>
+      <p class="sub">Free: 1,500 requests/day. No credit card needed.</p>
       <div class="instructions"><ol>
         <li>Go to <a href="https://aistudio.google.com/apikey" target="_blank">aistudio.google.com/apikey</a></li>
         <li>Click <strong style="color:var(--text)">Get API key → Create API key</strong></li>
         <li>Copy the key (starts with <code>AIza</code>) and paste below</li>
       </ol></div>
-      <label class="field-label">Gemini API key</label>
-      <input class="field-input" type="password" id="s1-key" placeholder="AIzaSy...">
-      <div class="err" id="s1-err"></div>
-      <button class="btn-primary" onclick="s1Next()">Continue →</button>
+      <label class="fl">Gemini API key</label>
+      <input class="fi" type="password" id="s1-key" placeholder="AIzaSy...">
+      <div class="er" id="s1-err"></div>
+      <button class="bp" onclick="s1Next()">Continue →</button>
     </div>
     <div id="s2" style="display:none">
       <div class="step-tag">Step 2 of 3 — Web search</div>
       <h2>Brave Search API</h2>
-      <p class="sub">Shows real search results embedded in WonderStart — no redirects. Free: 2,000 searches/month. Skip to use DuckDuckGo redirect instead.</p>
+      <p class="sub">Results embedded in WonderStart — no redirects. Free: 2,000 searches/month. Skip to use DuckDuckGo redirect.</p>
       <div class="instructions"><ol>
         <li>Go to <a href="https://api.search.brave.com/register" target="_blank">api.search.brave.com/register</a></li>
         <li>Create a free account and verify your email</li>
-        <li>Go to <strong style="color:var(--text)">API Keys</strong> → create a key</li>
-        <li>Paste the key below</li>
+        <li><strong style="color:var(--text)">API Keys</strong> → create a key → paste below</li>
       </ol></div>
-      <label class="field-label">Brave Search API key</label>
-      <input class="field-input" type="password" id="s2-brave" placeholder="BSA...">
-      <div class="err" id="s2-err"></div>
-      <button class="btn-primary" onclick="s2Next()">Continue →</button>
-      <button class="btn-ghost" onclick="s2Skip()">Skip — use DuckDuckGo redirect</button>
+      <label class="fl">Brave Search API key</label>
+      <input class="fi" type="password" id="s2-brave" placeholder="BSA...">
+      <div class="er" id="s2-err"></div>
+      <button class="bp" onclick="s2Next()">Continue →</button>
+      <button class="bg" onclick="s2Skip()">Skip — use DuckDuckGo redirect</button>
     </div>
     <div id="s3" style="display:none">
       <div class="step-tag">Step 3 of 3 — Cross-device sync</div>
       <h2>Connect Google sync</h2>
-      <p class="sub">Uses Firebase (free, by Google) to sync history across all your devices. Skip to use local storage only.</p>
+      <p class="sub">Firebase (free, by Google) syncs history across all devices. Skip for local storage only.</p>
       <div class="instructions"><ol>
-        <li>Go to <a href="https://console.firebase.google.com" target="_blank">console.firebase.google.com</a> → <strong style="color:var(--text)">Add project</strong></li>
+        <li><a href="https://console.firebase.google.com" target="_blank">console.firebase.google.com</a> → <strong style="color:var(--text)">Add project</strong></li>
         <li><strong style="color:var(--text)">Authentication</strong> → Get started → Enable <strong style="color:var(--text)">Google</strong></li>
         <li>Add your GitHub Pages domain under <strong style="color:var(--text)">Authorized domains</strong></li>
-        <li><strong style="color:var(--text)">Firestore Database</strong> → Create database → Production mode</li>
+        <li><strong style="color:var(--text)">Firestore Database</strong> → Create → Production mode</li>
         <li>Firestore → <strong style="color:var(--text)">Rules</strong> → replace all with:<br>
-          <code>rules_version = '2';<br>service cloud.firestore {<br>&nbsp;match /databases/{database}/documents {<br>&nbsp;&nbsp;match /users/{uid}/{d=**} {<br>&nbsp;&nbsp;&nbsp;allow read,write: if request.auth.uid==uid;<br>&nbsp;&nbsp;}<br>&nbsp;}<br>}</code>
-        </li>
+        <code>rules_version = '2';<br>service cloud.firestore {<br>&nbsp;match /databases/{database}/documents {<br>&nbsp;&nbsp;match /users/{uid}/{d=**} {<br>&nbsp;&nbsp;&nbsp;allow read,write: if request.auth.uid==uid;<br>&nbsp;&nbsp;}<br>&nbsp;}<br>}</code></li>
         <li>⚙ <strong style="color:var(--text)">Project settings → Web app</strong> → register → copy the config JSON</li>
       </ol></div>
-      <label class="field-label">Firebase config (JSON)</label>
-      <input class="field-input" type="text" id="s3-cfg" placeholder='{"apiKey":"...","authDomain":"...","projectId":"..."}'>
-      <div class="err" id="s3-err"></div>
-      <button class="btn-primary" onclick="s3Save()">Save &amp; start →</button>
-      <button class="btn-ghost" onclick="s3Skip()">Skip — local storage only</button>
+      <label class="fl">Firebase config (JSON)</label>
+      <input class="fi" type="text" id="s3-cfg" placeholder='{"apiKey":"...","authDomain":"...","projectId":"..."}'>
+      <div class="er" id="s3-err"></div>
+      <button class="bp" onclick="s3Save()">Save &amp; start →</button>
+      <button class="bg" onclick="s3Skip()">Skip — local storage only</button>
     </div>
   </div>
 </div>
@@ -204,35 +234,36 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'DM San
   <div class="panel">
     <h2 style="margin-bottom:.3rem">Settings</h2>
     <p class="sub" style="margin-bottom:1.25rem">Update your API keys or sync configuration.</p>
-    <label class="field-label">Gemini API key</label>
-    <input class="field-input" type="password" id="cfg-gemini" placeholder="AIzaSy...">
-    <label class="field-label">Brave Search key (blank = use DuckDuckGo redirect)</label>
-    <input class="field-input" type="password" id="cfg-brave" placeholder="BSA...">
-    <label class="field-label">Firebase config JSON (blank = local only)</label>
-    <input class="field-input" type="text" id="cfg-fb" placeholder='{"apiKey":"..."}'>
-    <div class="err" id="cfg-err"></div>
-    <button class="btn-primary" onclick="saveSettings()">Save changes</button>
-    <button class="btn-ghost" onclick="closeSettings()">Cancel</button>
+    <label class="fl">Gemini API key</label>
+    <input class="fi" type="password" id="cfg-gemini" placeholder="AIzaSy...">
+    <label class="fl">Brave Search key (blank = DuckDuckGo redirect)</label>
+    <input class="fi" type="password" id="cfg-brave" placeholder="BSA...">
+    <label class="fl">Firebase config JSON (blank = local only)</label>
+    <input class="fi" type="text" id="cfg-fb" placeholder='{"apiKey":"..."}'>
+    <div class="er" id="cfg-err"></div>
+    <button class="bp" onclick="saveSettings()">Save changes</button>
+    <button class="bg" onclick="closeSettings()">Cancel</button>
   </div>
 </div>
 
 <!-- APP -->
 <div id="app">
+  <!-- SIDEBAR -->
   <div id="sidebar">
     <div id="sb-top"><button id="new-chat-btn" onclick="newChat()">✦ New chat</button></div>
-    <div id="chat-list"><div class="empty-state">No chats yet.<br>Ask something to get started.</div></div>
+    <div id="chat-list"><div class="es">No chats yet.<br>Ask something to start.</div></div>
     <div id="sb-footer">
       <div id="user-area" onclick="handleUserClick()">
         <div id="user-av">?</div>
         <div id="user-info"><div id="user-name">Not signed in</div><div id="user-sub">Local mode</div></div>
       </div>
-      <div class="clear-wrap">
-        <button class="sb-btn danger" onclick="toggleClearDrop()">Clear history…</button>
+      <div class="cw">
+        <button class="sbb danger" onclick="toggleClearDrop()">Clear history…</button>
         <div id="clear-drop">
-          <button class="clear-opt" onclick="clearHistory('hour')">Last hour</button>
-          <button class="clear-opt" onclick="clearHistory('day')">Last 24 hours</button>
-          <button class="clear-opt" onclick="clearHistory('week')">Last 7 days</button>
-          <button class="clear-opt" onclick="clearHistory('all')">All time</button>
+          <button class="co" onclick="clearHistory('hour')">Last hour</button>
+          <button class="co" onclick="clearHistory('day')">Last 24 hours</button>
+          <button class="co" onclick="clearHistory('week')">Last 7 days</button>
+          <button class="co" onclick="clearHistory('all')">All time</button>
         </div>
       </div>
     </div>
@@ -245,52 +276,61 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'DM San
   </button>
   <div id="sb-backdrop" onclick="closeSidebar()"></div>
 
-  <div id="main-wrap">
-    <div id="main">
-      <div class="wordmark" onclick="newChat()">WonderStart</div>
-      <div class="mode-toggle">
+  <!-- MAIN COLUMN -->
+  <div id="main-col">
+
+    <!-- MODE BAR -->
+    <div id="mode-bar">
+      <span id="mode-bar-title">WonderStart</span>
+      <div class="modes">
         <button class="mode-btn active" id="btn-ai" onclick="setMode('ai')">✦ AI</button>
         <button class="mode-btn" id="btn-search" onclick="setMode('search')">⌕ Search</button>
       </div>
-      <div class="search-wrap">
-        <textarea id="query" rows="1" placeholder="Ask anything…" oninput="autoResize(this)" onkeydown="handleKey(event)"></textarea>
-        <button id="submit-btn" onclick="submit()">
-          <svg width="14" height="14" fill="none" stroke="#0d0e13" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24">
-            <line x1="12" y1="19" x2="12" y2="5"/><polyline points="5 12 12 5 19 12"/>
-          </svg>
-        </button>
-      </div>
-      <p class="hint"><kbd>Enter</kbd> to send &nbsp;·&nbsp; <kbd>Shift+Enter</kbd> new line &nbsp;·&nbsp; <kbd>Tab</kbd> switch mode</p>
+    </div>
 
-      <div id="response-wrap">
-        <div class="response-card">
-          <div class="response-label">response</div>
-          <div id="context-note" class="context-note" style="display:none"></div>
-          <div id="response-content"></div>
-          <div class="response-actions" id="response-actions"></div>
-        </div>
+    <!-- THREAD -->
+    <div id="thread">
+      <div id="empty">
+        <div class="wm">WonderStart</div>
+        <div class="ws">ask anything · search the web · send images</div>
       </div>
+    </div>
 
-      <div id="search-wrap">
-        <div class="search-meta">
-          <span class="search-meta-label">search results</span>
-          <div class="search-meta-right">
-            <span id="search-count" style="font-size:.72rem;color:var(--muted);font-family:'IBM Plex Mono',monospace"></span>
-            <a id="ddg-link" class="open-ddg" target="_blank">Open in DuckDuckGo ↗</a>
+    <!-- INPUT BAR -->
+    <div id="input-bar">
+      <div class="ib-inner">
+        <div id="attach-preview"></div>
+        <div class="ib-row">
+          <textarea id="query" rows="1" placeholder="Ask anything…"
+            oninput="autoResize(this)" onkeydown="handleKey(event)"></textarea>
+          <div class="ib-actions">
+            <button class="ib-icon-btn" onclick="triggerFile()" title="Attach image">
+              <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24">
+                <rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/>
+                <polyline points="21 15 16 10 5 21"/>
+              </svg>
+            </button>
+            <button id="send-btn" onclick="submit()" title="Send (Enter)">
+              <svg width="13" height="13" fill="none" stroke="#0d0e13" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24">
+                <line x1="12" y1="19" x2="12" y2="5"/><polyline points="5 12 12 5 19 12"/>
+              </svg>
+            </button>
           </div>
         </div>
-        <div id="results-list" class="results-list"></div>
+        <div class="ib-hint"><kbd>Enter</kbd> send &nbsp;·&nbsp; <kbd>Shift+Enter</kbd> new line &nbsp;·&nbsp; <kbd>Tab</kbd> switch mode</div>
       </div>
     </div>
   </div>
 </div>
 
 <button id="settings-btn" onclick="openSettings()">
-  <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24">
+  <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24">
     <circle cx="12" cy="12" r="3"/>
     <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
   </svg>
 </button>
+
+<input type="file" id="file-input" accept="image/*" multiple style="display:none" onchange="handleFiles(this.files)">
 
 <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-auth-compat.js"></script>
@@ -299,7 +339,9 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'DM San
 let mode='ai', geminiKey='', braveKey='', fbConfigObj=null;
 let streaming=false, currentChatId=null, currentMessages=[], allChats=[];
 let db=null, fbAuth=null, currentUser=null, fbReady=false;
+let pendingImages=[]; // [{base64, mimeType, previewUrl, name}]
 
+// ── BOOT ──────────────────────────────────────────────────
 (function boot(){
   geminiKey=localStorage.getItem('ws_gemini')||'';
   braveKey=localStorage.getItem('ws_brave')||'';
@@ -313,10 +355,11 @@ function showSetup(n){
   document.getElementById('setup-overlay').classList.remove('hidden');
   [1,2,3].forEach(i=>document.getElementById('s'+i).style.display=i===n?'':'none');
 }
-function showMain(){document.getElementById('setup-overlay').classList.add('hidden');}
+function showMain(){document.getElementById('setup-overlay').classList.add('hidden');document.getElementById('query').focus();}
 
+// ── SETUP ─────────────────────────────────────────────────
 function s1Next(){
-  const v=document.getElementById('s1-key').value.trim(), e=document.getElementById('s1-err');
+  const v=document.getElementById('s1-key').value.trim(),e=document.getElementById('s1-err');
   if(!v.startsWith('AIza')){e.textContent='Key should start with AIza.';return;}
   localStorage.setItem('ws_gemini',v);geminiKey=v;e.textContent='';showSetup(2);
 }
@@ -327,10 +370,10 @@ function s2Next(){
 }
 function s2Skip(){showSetup(3);}
 function s3Save(){
-  const raw=document.getElementById('s3-cfg').value.trim(), e=document.getElementById('s3-err');
+  const raw=document.getElementById('s3-cfg').value.trim(),e=document.getElementById('s3-err');
   let cfg;
   try{const c=raw.replace(/^const\s+firebaseConfig\s*=\s*/,'').replace(/;$/,'');cfg=JSON.parse(c);}
-  catch{e.textContent='Invalid JSON — copy the config object exactly from Firebase.';return;}
+  catch{e.textContent='Invalid JSON — copy the config object exactly.';return;}
   if(!cfg.projectId||!cfg.apiKey){e.textContent='Config missing projectId or apiKey.';return;}
   localStorage.setItem('ws_fb',JSON.stringify(cfg));fbConfigObj=cfg;
   e.textContent='';initFirebase();showMain();
@@ -339,13 +382,14 @@ function s3Skip(){loadLocal();showMain();}
 document.getElementById('s1-key').addEventListener('keydown',e=>{if(e.key==='Enter')s1Next();});
 document.getElementById('s2-brave').addEventListener('keydown',e=>{if(e.key==='Enter')s2Next();});
 
+// ── FIREBASE ──────────────────────────────────────────────
 function initFirebase(){
   try{
     if(!firebase.apps.length)firebase.initializeApp(fbConfigObj);
     fbAuth=firebase.auth();db=firebase.firestore();fbReady=true;
     fbAuth.onAuthStateChanged(user=>{
       currentUser=user;updateUserUI();
-      if(user){loadFirestore();}else{loadLocal();}
+      if(user)loadFirestore();else loadLocal();
       showMain();
     });
   }catch(e){console.error(e);loadLocal();showMain();}
@@ -387,15 +431,21 @@ function updateUserUI(){
   }
 }
 
+// ── STORAGE ───────────────────────────────────────────────
 function loadLocal(){
   try{allChats=JSON.parse(localStorage.getItem('ws_chats')||'[]');}catch{allChats=[];}
   renderSidebar();
 }
 function genId(){return Date.now().toString(36)+Math.random().toString(36).substr(2,5);}
 async function persistChat(chat){
-  const idx=allChats.findIndex(c=>c.id===chat.id);
-  if(idx>=0)allChats[idx]=chat;else allChats.unshift(chat);
-  if(db&&currentUser){await db.collection('users').doc(currentUser.uid).collection('chats').doc(chat.id).set(chat);}
+  // strip image data before persisting (keep only text parts for storage)
+  const lean={...chat,messages:chat.messages.map(m=>({
+    role:m.role,
+    parts:m.parts.map(p=>p.text!==undefined?{text:p.text}:{text:'[image]'})
+  }))};
+  const idx=allChats.findIndex(c=>c.id===lean.id);
+  if(idx>=0)allChats[idx]=lean;else allChats.unshift(lean);
+  if(db&&currentUser)await db.collection('users').doc(currentUser.uid).collection('chats').doc(lean.id).set(lean);
   else localStorage.setItem('ws_chats',JSON.stringify(allChats));
   renderSidebar();
 }
@@ -407,43 +457,40 @@ async function deleteChat(id){
   renderSidebar();
 }
 async function clearHistory(period){
-  const now=Date.now(),cutoffs={hour:3600000,day:86400000,week:604800000,all:Infinity};
-  const ms=cutoffs[period]||Infinity;
+  const now=Date.now(),ms={hour:3600000,day:86400000,week:604800000,all:Infinity}[period]||Infinity;
   const toDel=allChats.filter(c=>(now-c.updatedAt)<=ms);
-  for(const c of toDel){if(db&&currentUser)await db.collection('users').doc(currentUser.uid).collection('chats').doc(c.id).delete();}
+  for(const c of toDel)if(db&&currentUser)await db.collection('users').doc(currentUser.uid).collection('chats').doc(c.id).delete();
   allChats=allChats.filter(c=>(now-c.updatedAt)>ms);
   localStorage.setItem('ws_chats',JSON.stringify(allChats));
   if(toDel.find(c=>c.id===currentChatId))newChat(true);
   renderSidebar();closeClearDrop();
 }
 
+// ── SIDEBAR ───────────────────────────────────────────────
 function renderSidebar(){
   const list=document.getElementById('chat-list');
-  if(!allChats.length){list.innerHTML='<div class="empty-state">No chats yet.<br>Ask something to get started.</div>';return;}
+  if(!allChats.length){list.innerHTML='<div class="es">No chats yet.<br>Ask something to start.</div>';return;}
   const d=ms=>new Date(new Date().setHours(0,0,0,0)-ms);
-  const groups=[
-    {label:'Today',chats:[]},{label:'Yesterday',chats:[]},
-    {label:'Last 7 days',chats:[]},{label:'Last 30 days',chats:[]},{label:'Older',chats:[]},
-  ];
+  const groups=[{l:'Today',c:[]},{l:'Yesterday',c:[]},{l:'Last 7 days',c:[]},{l:'Last 30 days',c:[]},{l:'Older',c:[]}];
   for(const chat of allChats){
     const t=new Date(chat.updatedAt);
-    if(t>=d(0))groups[0].chats.push(chat);
-    else if(t>=d(86400000))groups[1].chats.push(chat);
-    else if(t>=d(7*86400000))groups[2].chats.push(chat);
-    else if(t>=d(30*86400000))groups[3].chats.push(chat);
-    else groups[4].chats.push(chat);
+    if(t>=d(0))groups[0].c.push(chat);
+    else if(t>=d(86400000))groups[1].c.push(chat);
+    else if(t>=d(7*86400000))groups[2].c.push(chat);
+    else if(t>=d(30*86400000))groups[3].c.push(chat);
+    else groups[4].c.push(chat);
   }
   let html='';
   for(const g of groups){
-    if(!g.chats.length)continue;
-    html+=`<div class="group-label">${g.label}</div>`;
-    for(const c of g.chats){
+    if(!g.c.length)continue;
+    html+=`<div class="gl">${g.l}</div>`;
+    for(const c of g.c){
       const active=c.id===currentChatId?' active':'';
-      const n=c.messages?c.messages.length:0;
-      const turns=n>0?` <span style="color:var(--muted);font-size:.68rem">${Math.floor(n/2)}</span>`:'';
-      html+=`<div class="chat-item${active}" onclick="loadChat('${c.id}')">
-        <span class="chat-title">${escH(c.title)}${turns}</span>
-        <button class="chat-del" onclick="event.stopPropagation();deleteChat('${c.id}')">×</button>
+      const n=c.messages?Math.floor(c.messages.length/2):0;
+      const turns=n>0?` <span style="color:var(--muted);font-size:.67rem">${n}</span>`:'';
+      html+=`<div class="ci${active}" onclick="loadChat('${c.id}')">
+        <span class="ct">${escH(c.title)}${turns}</span>
+        <button class="cd" onclick="event.stopPropagation();deleteChat('${c.id}')">×</button>
       </div>`;
     }
   }
@@ -451,57 +498,158 @@ function renderSidebar(){
 }
 function escH(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
 
+// ── LOAD CHAT ─────────────────────────────────────────────
 function loadChat(chatId){
   const chat=allChats.find(c=>c.id===chatId);if(!chat)return;
-  currentChatId=chatId;currentMessages=chat.messages?JSON.parse(JSON.stringify(chat.messages)):[];
-  hideSearch();
-  const lastModel=[...currentMessages].reverse().find(m=>m.role==='model');
-  const lastUser=[...currentMessages].reverse().find(m=>m.role==='user');
-  if(lastUser){const q=document.getElementById('query');q.value=lastUser.parts[0].text;autoResize(q);}
-  if(lastModel){
-    const turns=Math.floor(currentMessages.length/2);
-    const cn=document.getElementById('context-note');
-    if(turns>1){cn.style.display='';cn.textContent=`↑ ${turns} turns of context loaded`;}else cn.style.display='none';
-    renderResponse(lastModel.parts[0].text,false);
-    document.getElementById('response-wrap').classList.add('visible');
-    showActions();
-  }
+  currentChatId=chatId;
+  currentMessages=chat.messages?JSON.parse(JSON.stringify(chat.messages)):[];
+  renderThread();
   renderSidebar();closeSidebar();
+  scrollThread();
 }
 
+// ── NEW CHAT ──────────────────────────────────────────────
 function newChat(silent){
   currentChatId=null;currentMessages=[];
+  document.getElementById('thread').innerHTML='<div id="empty"><div class="wm">WonderStart</div><div class="ws">ask anything · search the web · send images</div></div>';
   const q=document.getElementById('query');q.value='';autoResize(q);
-  hideResponse();hideSearch();renderSidebar();
+  pendingImages=[];renderAttachPreview();
+  renderSidebar();
   if(!silent){q.focus();closeSidebar();}
 }
-function hideResponse(){document.getElementById('response-wrap').classList.remove('visible');document.getElementById('context-note').style.display='none';}
-function hideSearch(){document.getElementById('search-wrap').style.display='none';}
 
-function submit(){
-  const q=document.getElementById('query').value.trim();
-  if(!q||streaming)return;
-  if(mode==='search'){doSearch(q);return;}
-  askGemini(q);
+// ── THREAD RENDER ─────────────────────────────────────────
+function renderThread(){
+  const thread=document.getElementById('thread');
+  thread.innerHTML='';
+  for(const msg of currentMessages){
+    if(msg.role==='user'){
+      const textPart=msg.parts.find(p=>p.text);
+      const imgParts=msg.parts.filter(p=>p.inlineData);
+      let inner='';
+      if(imgParts.length){
+        inner+=imgParts.map(p=>`<img class="msg-img" src="data:${p.inlineData.mimeType};base64,${p.inlineData.data}" alt="">`).join('');
+      }
+      if(textPart&&textPart.text&&textPart.text!='[image]'){
+        inner+=`<div>${escH(textPart.text)}</div>`;
+      }
+      thread.innerHTML+=`<div class="msg user"><div class="bubble">${inner}</div></div>`;
+    } else {
+      const text=msg.parts[0]?.text||'';
+      thread.innerHTML+=`<div class="msg assistant"><div class="bubble">${mdLite(text)}</div></div>`;
+    }
+  }
 }
 
-async function doSearch(query){
-  hideResponse();
-  const sw=document.getElementById('search-wrap');
-  sw.style.display='block';
-  document.getElementById('ddg-link').href='https://duckduckgo.com/?q='+encodeURIComponent(query);
-  document.getElementById('search-count').textContent='';
-  const rl=document.getElementById('results-list');
+function addUserBubble(text, images){
+  hideEmpty();
+  const thread=document.getElementById('thread');
+  let inner='';
+  if(images&&images.length) inner+=images.map(img=>`<img class="msg-img" src="${img.previewUrl}" alt="">`).join('');
+  if(text) inner+=`<div>${escH(text)}</div>`;
+  thread.innerHTML+=`<div class="msg user"><div class="bubble">${inner}</div></div>`;
+  scrollThread();
+}
 
-  if(!braveKey){
-    rl.innerHTML=`<div class="search-msg">
-      No Brave Search key — <button data-link onclick="openSettings()">add one in Settings</button>
-      or <a href="https://duckduckgo.com/?q=${encodeURIComponent(query)}" target="_blank">open in DuckDuckGo ↗</a>
-    </div>`;
+function addAssistantBubble(){
+  hideEmpty();
+  const thread=document.getElementById('thread');
+  const id='ai-'+genId();
+  thread.innerHTML+=`<div class="msg assistant" id="${id}"><div class="bubble"><div class="typing-dot"><span></span><span></span><span></span></div></div></div>`;
+  scrollThread();
+  return id;
+}
+
+function updateAssistantBubble(id, text, done){
+  const el=document.getElementById(id);
+  if(!el)return;
+  el.querySelector('.bubble').innerHTML=mdLite(text)+(done?'':'<span class="cursor-blink"></span>');
+  scrollThread();
+}
+
+function addSearchBlock(query, results, error){
+  hideEmpty();
+  const thread=document.getElementById('thread');
+  const ddgUrl='https://duckduckgo.com/?q='+encodeURIComponent(query);
+  let inner='';
+  if(error){
+    inner=`<div class="sr-msg">${error} &nbsp;·&nbsp; <a href="${ddgUrl}" target="_blank">Open in DuckDuckGo ↗</a></div>`;
+  } else if(!results||!results.length){
+    inner=`<div class="sr-msg">No results found. <a href="${ddgUrl}" target="_blank">Try DuckDuckGo ↗</a></div>`;
+  } else {
+    inner=`<div class="sr-header">
+      <span class="sr-label">search results</span>
+      <div class="sr-right">
+        <span class="sr-count">${results.length} results</span>
+        <a class="open-ddg" href="${ddgUrl}" target="_blank">Open in DuckDuckGo ↗</a>
+      </div>
+    </div>
+    <div class="results-grid">${results.map(r=>`
+      <div class="ri" onclick="window.open('${escH(r.url)}','_blank')">
+        <div class="ri-url">${escH(new URL(r.url).hostname.replace('www.',''))}</div>
+        <div class="ri-title">${escH(r.title)}</div>
+        ${r.description?`<div class="ri-desc">${escH(r.description)}</div>`:''}
+      </div>`).join('')}</div>`;
+  }
+  thread.innerHTML+=`<div class="search-result-block">${inner}</div>`;
+  scrollThread();
+}
+
+function hideEmpty(){document.getElementById('empty')&&document.getElementById('empty').remove();}
+function scrollThread(){const t=document.getElementById('thread');t.scrollTop=t.scrollHeight;}
+
+// ── IMAGE ATTACHMENTS ─────────────────────────────────────
+function triggerFile(){document.getElementById('file-input').click();}
+
+function handleFiles(files){
+  for(const file of files){
+    if(!file.type.startsWith('image/'))continue;
+    const reader=new FileReader();
+    reader.onload=e=>{
+      const dataUrl=e.target.result;
+      const base64=dataUrl.split(',')[1];
+      pendingImages.push({base64,mimeType:file.type,previewUrl:dataUrl,name:file.name});
+      renderAttachPreview();
+    };
+    reader.readAsDataURL(file);
+  }
+  document.getElementById('file-input').value='';
+}
+
+function renderAttachPreview(){
+  const wrap=document.getElementById('attach-preview');
+  if(!pendingImages.length){wrap.innerHTML='';return;}
+  wrap.innerHTML=pendingImages.map((img,i)=>`
+    <div class="ap-item">
+      <img src="${img.previewUrl}" alt="">
+      <button class="ap-rm" onclick="removeImage(${i})">×</button>
+    </div>`).join('');
+}
+function removeImage(i){pendingImages.splice(i,1);renderAttachPreview();}
+
+// ── SUBMIT ────────────────────────────────────────────────
+function submit(){
+  const text=document.getElementById('query').value.trim();
+  if((!text&&!pendingImages.length)||streaming)return;
+  const q=document.getElementById('query');q.value='';autoResize(q);
+  if(mode==='search'){
+    addUserBubble(text,[]);
+    doSearch(text);
     return;
   }
+  const imgs=[...pendingImages];
+  pendingImages=[];renderAttachPreview();
+  addUserBubble(text,imgs);
+  askGemini(text,imgs);
+}
 
-  rl.innerHTML='<div class="search-msg">Searching…</div>';
+// ── BRAVE SEARCH ──────────────────────────────────────────
+async function doSearch(query){
+  if(!query)return;
+  if(!braveKey){
+    addSearchBlock(query,null,'No Brave Search key — <button class="link" onclick="openSettings()">add one in Settings</button>');
+    return;
+  }
   try{
     const res=await fetch(
       `https://api.search.brave.com/res/v1/web/search?q=${encodeURIComponent(query)}&count=10`,
@@ -509,35 +657,28 @@ async function doSearch(query){
     );
     if(!res.ok){
       const msg=res.status===401?'Invalid Brave API key — update in Settings.':`Brave API error ${res.status}`;
-      rl.innerHTML=`<div class="search-msg">${msg} &nbsp;·&nbsp; <a href="https://duckduckgo.com/?q=${encodeURIComponent(query)}" target="_blank">Open in DuckDuckGo ↗</a></div>`;
-      return;
+      addSearchBlock(query,null,msg);return;
     }
     const data=await res.json();
-    const results=data?.web?.results||[];
-    if(!results.length){
-      rl.innerHTML=`<div class="search-msg">No results. <a href="https://duckduckgo.com/?q=${encodeURIComponent(query)}" target="_blank">Try DuckDuckGo ↗</a></div>`;
-      return;
-    }
-    document.getElementById('search-count').textContent=results.length+' results';
-    rl.innerHTML=results.map(r=>`
-      <div class="result-item" onclick="window.open('${escH(r.url)}','_blank')">
-        <div class="result-url">${escH(new URL(r.url).hostname.replace('www.',''))}</div>
-        <div class="result-title">${escH(r.title)}</div>
-        ${r.description?`<div class="result-desc">${escH(r.description)}</div>`:''}
-      </div>`).join('');
-  }catch(e){
-    rl.innerHTML=`<div class="search-msg">Network error: ${e.message} &nbsp;·&nbsp; <a href="https://duckduckgo.com/?q=${encodeURIComponent(query)}" target="_blank">Open in DuckDuckGo ↗</a></div>`;
-  }
+    addSearchBlock(query,data?.web?.results||[],null);
+  }catch(e){addSearchBlock(query,null,'Network error: '+e.message);}
 }
 
-async function askGemini(userText){
+// ── GEMINI ────────────────────────────────────────────────
+async function askGemini(userText, images){
   if(streaming)return;streaming=true;
   if(!currentChatId)currentChatId=genId();
-  currentMessages.push({role:'user',parts:[{text:userText}]});
-  hideSearch();showResponse('',true);
 
-  const url=`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:streamGenerateContent?key=${geminiKey}&alt=sse`;
-  const body={contents:currentMessages,generationConfig:{temperature:0.7,maxOutputTokens:1800}};
+  // Build parts for this turn
+  const parts=[];
+  for(const img of images) parts.push({inlineData:{mimeType:img.mimeType,data:img.base64}});
+  if(userText) parts.push({text:userText});
+
+  currentMessages.push({role:'user',parts});
+
+  const bubbleId=addAssistantBubble();
+  const url=`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-04-17:streamGenerateContent?key=${geminiKey}&alt=sse`;
+  const body={contents:currentMessages,generationConfig:{temperature:0.7,maxOutputTokens:2000}};
 
   try{
     const res=await fetch(url,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
@@ -545,7 +686,7 @@ async function askGemini(userText){
       const err=await res.json().catch(()=>({error:{message:'HTTP '+res.status}}));
       currentMessages.pop();
       const msg=err?.error?.message||'API error '+res.status;
-      showResponse('⚠ '+(res.status===403||res.status===400?'API key rejected — open Settings to update.\n\n':'')+msg,false);
+      updateAssistantBubble(bubbleId,'⚠ '+(res.status===403||res.status===400?'API key rejected — open Settings.\n\n':'')+msg,true);
       streaming=false;return;
     }
     const reader=res.body.getReader(),dec=new TextDecoder();
@@ -557,18 +698,19 @@ async function askGemini(userText){
       for(const line of lines){
         if(!line.startsWith('data:'))continue;
         const data=line.slice(5).trim();if(data==='[DONE]')continue;
-        try{const j=JSON.parse(data);const p=j?.candidates?.[0]?.content?.parts?.[0]?.text;if(p){full+=p;renderResponse(full,true);}}catch{}
+        try{const j=JSON.parse(data);const p=j?.candidates?.[0]?.content?.parts?.[0]?.text;if(p){full+=p;updateAssistantBubble(bubbleId,full,false);}}catch{}
       }
     }
+    updateAssistantBubble(bubbleId,full,true);
     currentMessages.push({role:'model',parts:[{text:full}]});
-    renderResponse(full,false);showActions();
-    const title=userText.length>60?userText.substring(0,57)+'…':userText;
+    const title=(userText||'Image').length>60?(userText||'Image').substring(0,57)+'…':(userText||'Image');
     await persistChat({id:currentChatId,title,messages:currentMessages,
       createdAt:allChats.find(c=>c.id===currentChatId)?.createdAt||Date.now(),updatedAt:Date.now()});
-  }catch(e){currentMessages.pop();showResponse('⚠ Network error: '+e.message,false);}
+  }catch(e){currentMessages.pop();updateAssistantBubble(bubbleId,'⚠ Network error: '+e.message,true);}
   streaming=false;
 }
 
+// ── UI HELPERS ────────────────────────────────────────────
 function setMode(m){
   mode=m;
   document.getElementById('btn-ai').classList.toggle('active',m==='ai');
@@ -576,33 +718,17 @@ function setMode(m){
   document.getElementById('query').placeholder=m==='ai'?'Ask anything…':'Search the web…';
   document.getElementById('query').focus();
 }
-function autoResize(el){el.style.height='auto';el.style.height=Math.min(el.scrollHeight,240)+'px';}
+function autoResize(el){el.style.height='auto';el.style.height=Math.min(el.scrollHeight,180)+'px';}
 function handleKey(e){
   if(e.key==='Tab'){e.preventDefault();setMode(mode==='ai'?'search':'ai');return;}
   if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();submit();}
 }
-function showResponse(text,cursor){
-  document.getElementById('response-wrap').classList.add('visible');
-  document.getElementById('response-actions').innerHTML='';
-  renderResponse(text,cursor);
-}
-function renderResponse(text,cursor){
-  document.getElementById('response-content').innerHTML=mdLite(text)+(cursor?'<span class="cursor-blink"></span>':'');
-}
-function showActions(){
-  document.getElementById('response-actions').innerHTML=`
-    <button class="act-btn" onclick="copyResp()">Copy</button>
-    <button class="act-btn" onclick="newChat()">New chat</button>
-    <button class="act-btn" onclick="searchThis()">Search instead</button>`;
-}
-function copyResp(){navigator.clipboard.writeText(document.getElementById('response-content').innerText).catch(()=>{});}
-function searchThis(){const q=document.getElementById('query').value.trim();if(q)window.open('https://duckduckgo.com/?q='+encodeURIComponent(q),'_blank');}
 
 function toggleSidebar(){document.getElementById('sidebar').classList.toggle('open');document.getElementById('sb-backdrop').classList.toggle('open');}
 function closeSidebar(){if(window.innerWidth<=768){document.getElementById('sidebar').classList.remove('open');document.getElementById('sb-backdrop').classList.remove('open');}}
 function toggleClearDrop(){document.getElementById('clear-drop').classList.toggle('open');}
 function closeClearDrop(){document.getElementById('clear-drop').classList.remove('open');}
-document.addEventListener('click',e=>{if(!e.target.closest('.clear-wrap'))closeClearDrop();});
+document.addEventListener('click',e=>{if(!e.target.closest('.cw'))closeClearDrop();});
 
 function openSettings(){
   document.getElementById('cfg-gemini').value=geminiKey;
