@@ -1,0 +1,661 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Start</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital@0;1&family=IBM+Plex+Mono:wght@400;500&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #0d0e13;
+    --surface: #14151c;
+    --border: #2a2c38;
+    --text: #e8e4d8;
+    --muted: #6b6d7d;
+    --accent: #c9922a;
+    --accent-dim: rgba(201,146,42,0.12);
+    --green: #4caf87;
+    --red: #cf5c5c;
+    --radius: 10px;
+  }
+
+  html, body {
+    height: 100%;
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 15px;
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  body {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    min-height: 100vh;
+    padding: 0 1rem;
+  }
+
+  /* ── SETUP OVERLAY ── */
+  #setup-overlay {
+    position: fixed;
+    inset: 0;
+    background: var(--bg);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 100;
+    padding: 2rem;
+  }
+  #setup-overlay.hidden { display: none; }
+
+  .setup-card {
+    max-width: 440px;
+    width: 100%;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 2.5rem 2rem;
+  }
+
+  .setup-card h2 {
+    font-family: 'Playfair Display', serif;
+    font-size: 1.5rem;
+    margin-bottom: 0.4rem;
+    color: var(--text);
+  }
+  .setup-card p {
+    font-size: 0.875rem;
+    color: var(--muted);
+    margin-bottom: 1.5rem;
+    line-height: 1.6;
+  }
+  .setup-card a { color: var(--accent); text-decoration: none; }
+  .setup-card a:hover { text-decoration: underline; }
+
+  .setup-card label {
+    display: block;
+    font-size: 0.8rem;
+    font-family: 'IBM Plex Mono', monospace;
+    color: var(--muted);
+    letter-spacing: 0.05em;
+    margin-bottom: 0.5rem;
+    text-transform: uppercase;
+  }
+
+  .setup-card input[type="text"],
+  .setup-card input[type="password"] {
+    width: 100%;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 0.75rem 1rem;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.85rem;
+    color: var(--text);
+    outline: none;
+    transition: border-color 0.15s;
+    margin-bottom: 1.25rem;
+  }
+  .setup-card input:focus { border-color: var(--accent); }
+
+  .setup-steps {
+    background: var(--bg);
+    border-radius: var(--radius);
+    padding: 1rem;
+    margin-bottom: 1.5rem;
+    font-size: 0.8rem;
+    color: var(--muted);
+  }
+  .setup-steps ol { padding-left: 1.2rem; }
+  .setup-steps li { margin-bottom: 0.4rem; }
+  .setup-steps li:last-child { margin-bottom: 0; }
+  .step-link { color: var(--accent); text-decoration: none; }
+  .step-link:hover { text-decoration: underline; }
+
+  /* ── MAIN PAGE ── */
+  #main {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: 100%;
+    max-width: 680px;
+    padding-top: min(14vh, 120px);
+    padding-bottom: 4rem;
+  }
+  #main.hidden { display: none; }
+
+  .wordmark {
+    font-family: 'Playfair Display', serif;
+    font-size: 1rem;
+    font-style: italic;
+    color: var(--muted);
+    letter-spacing: 0.02em;
+    margin-bottom: 2.5rem;
+    cursor: pointer;
+    user-select: none;
+    transition: color 0.15s;
+  }
+  .wordmark:hover { color: var(--accent); }
+
+  /* ── MODE TOGGLE ── */
+  .mode-toggle {
+    display: flex;
+    gap: 4px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 3px;
+    margin-bottom: 1.25rem;
+  }
+  .mode-btn {
+    padding: 0.35rem 1.1rem;
+    border: none;
+    border-radius: 6px;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.75rem;
+    letter-spacing: 0.04em;
+    cursor: pointer;
+    transition: background 0.15s, color 0.15s;
+    background: transparent;
+    color: var(--muted);
+  }
+  .mode-btn.active {
+    background: var(--accent-dim);
+    color: var(--accent);
+  }
+
+  /* ── SEARCH BOX ── */
+  .search-wrap {
+    width: 100%;
+    position: relative;
+    margin-bottom: 1rem;
+  }
+
+  #query {
+    width: 100%;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 1rem 3.5rem 1rem 1.25rem;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 1rem;
+    font-weight: 300;
+    color: var(--text);
+    outline: none;
+    resize: none;
+    min-height: 56px;
+    max-height: 240px;
+    overflow-y: auto;
+    transition: border-color 0.15s;
+    line-height: 1.5;
+  }
+  #query::placeholder { color: var(--muted); }
+  #query:focus { border-color: rgba(201,146,42,0.4); }
+
+  #submit-btn {
+    position: absolute;
+    right: 0.75rem;
+    bottom: 0.75rem;
+    width: 32px;
+    height: 32px;
+    border-radius: 7px;
+    background: var(--accent);
+    border: none;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: opacity 0.15s, transform 0.1s;
+    flex-shrink: 0;
+  }
+  #submit-btn:hover { opacity: 0.85; }
+  #submit-btn:active { transform: scale(0.95); }
+  #submit-btn svg { display: block; }
+
+  .hint {
+    font-size: 0.75rem;
+    color: var(--muted);
+    text-align: center;
+  }
+  .hint kbd {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.7rem;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 1px 5px;
+  }
+
+  /* ── RESPONSE AREA ── */
+  #response-wrap {
+    width: 100%;
+    margin-top: 2rem;
+    opacity: 0;
+    transform: translateY(8px);
+    transition: opacity 0.3s, transform 0.3s;
+  }
+  #response-wrap.visible {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  .response-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 1.5rem 1.75rem;
+    position: relative;
+  }
+
+  .response-label {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.7rem;
+    color: var(--accent);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    margin-bottom: 1rem;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .response-label::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: var(--border);
+  }
+
+  #response-content {
+    font-size: 0.95rem;
+    line-height: 1.75;
+    color: var(--text);
+    white-space: pre-wrap;
+    word-break: break-word;
+  }
+  #response-content strong { color: var(--accent); font-weight: 500; }
+
+  .cursor-blink {
+    display: inline-block;
+    width: 2px;
+    height: 1em;
+    background: var(--accent);
+    vertical-align: text-bottom;
+    animation: blink 0.9s step-end infinite;
+    margin-left: 1px;
+  }
+  @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0} }
+
+  .response-actions {
+    margin-top: 1.25rem;
+    padding-top: 1rem;
+    border-top: 1px solid var(--border);
+    display: flex;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+  }
+  .action-btn {
+    font-size: 0.75rem;
+    font-family: 'IBM Plex Mono', monospace;
+    color: var(--muted);
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 0.35rem 0.75rem;
+    cursor: pointer;
+    transition: color 0.15s, border-color 0.15s;
+  }
+  .action-btn:hover { color: var(--text); border-color: var(--muted); }
+
+  /* ── SETTINGS BUTTON ── */
+  .settings-btn {
+    position: fixed;
+    bottom: 1.25rem;
+    right: 1.25rem;
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: border-color 0.15s;
+    z-index: 10;
+  }
+  .settings-btn:hover { border-color: var(--muted); }
+  .settings-btn svg { color: var(--muted); }
+
+  /* ── SAVE BTN STYLE ── */
+  .save-btn {
+    width: 100%;
+    padding: 0.8rem;
+    background: var(--accent);
+    color: #0d0e13;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.9rem;
+    font-weight: 500;
+    border: none;
+    border-radius: var(--radius);
+    cursor: pointer;
+    transition: opacity 0.15s;
+  }
+  .save-btn:hover { opacity: 0.85; }
+
+  .error-msg {
+    font-size: 0.8rem;
+    color: var(--red);
+    margin-top: 0.5rem;
+    min-height: 1em;
+  }
+
+  /* ── RESPONSIVE ── */
+  @media (max-width: 480px) {
+    #main { padding-top: 8vh; }
+    .response-card { padding: 1.25rem; }
+    .setup-card { padding: 1.75rem 1.25rem; }
+  }
+
+  /* ── MARKDOWN-LITE STYLING ── */
+  .md-h1, .md-h2, .md-h3 {
+    font-family: 'Playfair Display', serif;
+    color: var(--text);
+    margin: 1.2em 0 0.4em;
+  }
+  .md-h1 { font-size: 1.25rem; }
+  .md-h2 { font-size: 1.1rem; }
+  .md-h3 { font-size: 1rem; }
+  .md-li { margin-left: 1.2em; margin-bottom: 0.2em; }
+  .md-code {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.82rem;
+    background: var(--bg);
+    border-radius: 4px;
+    padding: 1px 5px;
+    color: #90c694;
+  }
+</style>
+</head>
+<body>
+
+<!-- ── SETUP OVERLAY ── -->
+<div id="setup-overlay">
+  <div class="setup-card">
+    <h2>One-time setup</h2>
+    <p>You need a free Gemini API key. It takes about 2 minutes and requires a Google account.</p>
+
+    <div class="setup-steps">
+      <ol>
+        <li>Go to <a class="step-link" href="https://aistudio.google.com/apikey" target="_blank">aistudio.google.com/apikey</a></li>
+        <li>Click <strong style="color:var(--text)">Get API key → Create API key</strong></li>
+        <li>Copy the key and paste it below</li>
+      </ol>
+    </div>
+
+    <label for="api-key-input">Gemini API key</label>
+    <input type="password" id="api-key-input" placeholder="AIza...">
+    <div class="error-msg" id="setup-error"></div>
+
+    <button class="save-btn" onclick="saveKey()">Save &amp; start →</button>
+  </div>
+</div>
+
+<!-- ── MAIN INTERFACE ── -->
+<div id="main" class="hidden">
+  <div class="wordmark" onclick="clearAndFocus()" title="Clear">start.</div>
+
+  <div class="mode-toggle">
+    <button class="mode-btn active" id="btn-ai" onclick="setMode('ai')">✦ AI</button>
+    <button class="mode-btn" id="btn-search" onclick="setMode('search')">⌕ Search</button>
+  </div>
+
+  <div class="search-wrap">
+    <textarea id="query" rows="1"
+      placeholder="Ask anything or search..."
+      oninput="autoResize(this)"
+      onkeydown="handleKey(event)"></textarea>
+    <button id="submit-btn" onclick="submit()" title="Submit (Enter)">
+      <svg width="14" height="14" fill="none" stroke="#0d0e13" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24">
+        <line x1="12" y1="19" x2="12" y2="5"/><polyline points="5 12 12 5 19 12"/>
+      </svg>
+    </button>
+  </div>
+  <p class="hint"><kbd>Enter</kbd> to send &nbsp;·&nbsp; <kbd>Shift+Enter</kbd> for new line &nbsp;·&nbsp; <kbd>Tab</kbd> to switch mode</p>
+
+  <div id="response-wrap">
+    <div class="response-card">
+      <div class="response-label" id="response-label">response</div>
+      <div id="response-content"></div>
+      <div class="response-actions" id="response-actions"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ── SETTINGS BUTTON ── -->
+<button class="settings-btn" onclick="openSettings()" title="Change API key">
+  <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24">
+    <circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+  </svg>
+</button>
+
+<script>
+  let mode = 'ai';
+  let apiKey = '';
+  let streaming = false;
+
+  // ── INIT ──
+  (function init() {
+    apiKey = localStorage.getItem('gemini_key') || '';
+    if (apiKey) showMain();
+    else showSetup();
+  })();
+
+  function showSetup() {
+    document.getElementById('setup-overlay').classList.remove('hidden');
+    document.getElementById('main').classList.add('hidden');
+  }
+  function showMain() {
+    document.getElementById('setup-overlay').classList.add('hidden');
+    document.getElementById('main').classList.remove('hidden');
+    document.getElementById('query').focus();
+  }
+
+  function saveKey() {
+    const val = document.getElementById('api-key-input').value.trim();
+    const err = document.getElementById('setup-error');
+    if (!val.startsWith('AIza')) {
+      err.textContent = 'That doesn\'t look like a valid key (should start with AIza).';
+      return;
+    }
+    err.textContent = '';
+    localStorage.setItem('gemini_key', val);
+    apiKey = val;
+    showMain();
+  }
+
+  document.getElementById('api-key-input').addEventListener('keydown', e => {
+    if (e.key === 'Enter') saveKey();
+  });
+
+  function openSettings() {
+    document.getElementById('api-key-input').value = apiKey;
+    showSetup();
+  }
+
+  // ── MODE ──
+  function setMode(m) {
+    mode = m;
+    document.getElementById('btn-ai').classList.toggle('active', m === 'ai');
+    document.getElementById('btn-search').classList.toggle('active', m === 'search');
+    const q = document.getElementById('query');
+    q.placeholder = m === 'ai' ? 'Ask anything…' : 'Search the web…';
+    q.focus();
+  }
+
+  // ── INPUT ──
+  function autoResize(el) {
+    el.style.height = 'auto';
+    el.style.height = Math.min(el.scrollHeight, 240) + 'px';
+  }
+
+  function handleKey(e) {
+    if (e.key === 'Tab') {
+      e.preventDefault();
+      setMode(mode === 'ai' ? 'search' : 'ai');
+      return;
+    }
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      submit();
+    }
+  }
+
+  function clearAndFocus() {
+    document.getElementById('query').value = '';
+    autoResize(document.getElementById('query'));
+    hideResponse();
+    document.getElementById('query').focus();
+  }
+
+  // ── SUBMIT ──
+  function submit() {
+    const q = document.getElementById('query').value.trim();
+    if (!q || streaming) return;
+
+    if (mode === 'search') {
+      window.open('https://duckduckgo.com/?q=' + encodeURIComponent(q), '_self');
+      return;
+    }
+    askGemini(q);
+  }
+
+  // ── GEMINI ──
+  async function askGemini(prompt) {
+    if (streaming) return;
+    streaming = true;
+
+    showResponse('thinking…', true);
+
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:streamGenerateContent?key=${apiKey}&alt=sse`;
+
+    const body = {
+      contents: [{ parts: [{ text: prompt }] }],
+      generationConfig: { temperature: 0.7, maxOutputTokens: 1800 }
+    };
+
+    try {
+      const res = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body)
+      });
+
+      if (!res.ok) {
+        const err = await res.json();
+        const msg = err?.error?.message || 'API error ' + res.status;
+        if (res.status === 400 || res.status === 403) {
+          showResponse('⚠ API key rejected. Click the settings icon (bottom-right) to update it.\n\n' + msg, false);
+        } else {
+          showResponse('⚠ ' + msg, false);
+        }
+        streaming = false;
+        return;
+      }
+
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder();
+      let full = '';
+      let buffer = '';
+
+      showResponse('', true);
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split('\n');
+        buffer = lines.pop();
+        for (const line of lines) {
+          if (!line.startsWith('data:')) continue;
+          const data = line.slice(5).trim();
+          if (data === '[DONE]') continue;
+          try {
+            const json = JSON.parse(data);
+            const part = json?.candidates?.[0]?.content?.parts?.[0]?.text;
+            if (part) {
+              full += part;
+              renderResponse(full, true);
+            }
+          } catch {}
+        }
+      }
+
+      renderResponse(full, false);
+      showActions(full);
+
+    } catch (err) {
+      showResponse('⚠ Network error: ' + err.message, false);
+    }
+    streaming = false;
+  }
+
+  // ── RESPONSE UI ──
+  function showResponse(text, showCursor) {
+    const wrap = document.getElementById('response-wrap');
+    wrap.classList.add('visible');
+    document.getElementById('response-actions').innerHTML = '';
+    renderResponse(text, showCursor);
+  }
+
+  function hideResponse() {
+    const wrap = document.getElementById('response-wrap');
+    wrap.classList.remove('visible');
+  }
+
+  function renderResponse(text, showCursor) {
+    const el = document.getElementById('response-content');
+    el.innerHTML = mdLite(text) + (showCursor ? '<span class="cursor-blink"></span>' : '');
+  }
+
+  function showActions(text) {
+    const acts = document.getElementById('response-actions');
+    acts.innerHTML = `
+      <button class="action-btn" onclick="copyResponse()">Copy</button>
+      <button class="action-btn" onclick="clearAndFocus()">New question</button>
+      <button class="action-btn" onclick="searchThis()">Search instead</button>
+    `;
+  }
+
+  function copyResponse() {
+    const text = document.getElementById('response-content').innerText;
+    navigator.clipboard.writeText(text).catch(() => {});
+  }
+
+  function searchThis() {
+    const q = document.getElementById('query').value.trim();
+    if (q) window.open('https://duckduckgo.com/?q=' + encodeURIComponent(q), '_blank');
+  }
+
+  // ── MARKDOWN LITE ──
+  function mdLite(text) {
+    return text
+      .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+      .replace(/`([^`]+)`/g, '<code class="md-code">$1</code>')
+      .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+      .replace(/^### (.+)$/gm, '<div class="md-h3">$1</div>')
+      .replace(/^## (.+)$/gm, '<div class="md-h2">$1</div>')
+      .replace(/^# (.+)$/gm, '<div class="md-h1">$1</div>')
+      .replace(/^\* (.+)$/gm, '<div class="md-li">• $1</div>')
+      .replace(/^- (.+)$/gm, '<div class="md-li">• $1</div>')
+      .replace(/^\d+\. (.+)$/gm, '<div class="md-li">$1</div>')
+      .replace(/\n\n/g, '<br><br>')
+      .replace(/\n/g, '<br>');
+  }
+</script>
+</body>
+</html>
