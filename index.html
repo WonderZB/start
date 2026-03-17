@@ -521,6 +521,7 @@ async function loadFirestore(){
     if(profile.exists){
       const d=profile.data();
       if(d.aiKey&&!aiKey){aiKey=d.aiKey;localStorage.setItem('ws_ai',aiKey);}
+      if(d.grokKey&&!grokKey){grokKey=d.grokKey;localStorage.setItem('ws_grok',grokKey);}
       if(d.braveKey&&!braveKey){braveKey=d.braveKey;localStorage.setItem('ws_brave',braveKey);}
       if(d.fbConfig&&!fbConfigObj){/* already have firebase */}
     }
@@ -935,16 +936,16 @@ async function sendToAI(query){
   const hasGrokKey = !!grokKey;
   const hasOpenRouterKey = !!aiKey;
   
-  if(!hasPuterAI && !hasGrokKey && !hasOpenRouterKey){
-    alert('Please set up your API key in Settings.');
-    return;
-  }
-  
   console.log('🤖 AI Request Starting...');
   console.log('- Puter AI Available:', hasPuterAI);
   console.log('- Grok Key Available:', hasGrokKey);
   console.log('- OpenRouter Key Available:', hasOpenRouterKey);
   console.log('- Query:', query);
+  
+  if(!hasPuterAI && !hasGrokKey && !hasOpenRouterKey){
+    alert('Please set up your API key in Settings.');
+    return;
+  }
   
   streaming=true;
   addUserBubble(query, pendingImages, pendingFiles);
@@ -972,7 +973,7 @@ async function sendToAI(query){
   let lastError='';
   
   try{
-    // Try Puter AI first (free unlimited Grok)
+    // Try Puter AI first (free unlimited)
     if(hasPuterAI){
       console.log('🚀 Trying Puter AI (Free Unlimited Grok)...');
       try{
