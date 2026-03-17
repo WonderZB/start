@@ -279,7 +279,9 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'DM San
   <div class="panel">
     <h2 style="margin-bottom:.3rem">Settings</h2>
     <p class="sub" style="margin-bottom:1.25rem">Update your API keys or sync configuration.</p>
-    <label class="fl">OpenRouter API key</label>
+    <label class="fl">Grok API key (recommended)</label>
+    <input class="fi" type="password" id="cfg-grok" placeholder="xai-...">
+    <label class="fl">OpenRouter API key (fallback)</label>
     <input class="fi" type="password" id="cfg-gemini" placeholder="sk-or-v1-...">
     <label class="fl">Serper.dev search key (blank = DuckDuckGo redirect)</label>
     <input class="fi" type="password" id="cfg-brave" placeholder="paste Serper.dev key here">
@@ -846,6 +848,7 @@ function closeClearDrop(){document.getElementById('clear-drop').classList.remove
 document.addEventListener('click',e=>{if(!e.target.closest('.cw'))closeClearDrop();});
 
 function openSettings(){
+  document.getElementById('cfg-grok').value=grokKey;
   document.getElementById('cfg-gemini').value=aiKey;
   document.getElementById('cfg-brave').value=braveKey;
   document.getElementById('cfg-fb').value=fbConfigObj?JSON.stringify(fbConfigObj):'';
@@ -854,23 +857,26 @@ function openSettings(){
 }
 function closeSettings(){document.getElementById('settings-overlay').classList.add('hidden');}
 function saveSettings(){
-  const gk=document.getElementById('cfg-gemini').value.trim();
+  const gk=document.getElementById('cfg-grok').value.trim();
+  const ork=document.getElementById('cfg-gemini').value.trim();
   const bk=document.getElementById('cfg-brave').value.trim();
-  const fbs=document.getElementById('cfg-fb').value.trim();
-  const err=document.getElementById('cfg-err');
-  if(gk){localStorage.setItem('ws_ai',gk);aiKey=gk;}
-  if(bk){localStorage.setItem('ws_brave',bk);braveKey=bk;}else{localStorage.removeItem('ws_brave');braveKey='';}
-  if(fbs){
-    let cfg;try{cfg=JSON.parse(fbs);}catch{err.textContent='Firebase config is not valid JSON.';return;}
-    if(!cfg.projectId||!cfg.apiKey){err.textContent='Config missing projectId or apiKey.';return;}
-    localStorage.setItem('ws_fb',JSON.stringify(cfg));fbConfigObj=cfg;
-  }else{localStorage.removeItem('ws_fb');fbConfigObj=null;}
-  err.textContent='';closeSettings();
-  if(fbConfigObj&&!fbReady)initFirebase();
-  // Save keys to Firebase so they sync across devices
-  if(db&&currentUser&&(aiKey||braveKey)){
-    db.collection('users').doc(currentUser.uid).set({aiKey,braveKey,updatedAt:Date.now()},{merge:true}).catch(()=>{});
+  const fb=document.getElementById('cfg-fb').value.trim();
+  const e=document.getElementById('cfg-err');
+  e.textContent='';
+  if(gk){
+    if(!gk.startsWith('xai-')){e.textContent='Grok key must start with "xai-"';return;}
+    grokKey=gk;localStorage.setItem('ws_grok',gk);
   }
+  if(ork){
+    if(!ork.startsWith('sk-or-')){e.textContent='OpenRouter key must start with "sk-or-"';return;}
+    aiKey=ork;localStorage.setItem('ws_ai',ork);
+  }
+  if(bk){braveKey=bk;localStorage.setItem('ws_brave',bk);if(db&&currentUser)db.collection('users').doc(currentUser.uid).set({braveKey:bk,updatedAt:Date.now()},{merge:true}).catch(()=>{});}
+  if(fb){
+    try{const cfg=JSON.parse(fb);if(cfg.apiKey){fbConfigObj=cfg;localStorage.setItem('ws_fb',fb);if(fbConfigObj){initFirebase();}}else{e.textContent='Invalid Firebase JSON';}}
+    catch{e.textContent='Invalid Firebase JSON';}
+  }
+  if(!e.textContent){closeSettings();}
 }
 
 // ── SUBMIT ───────────────────────────────────────────────────
