@@ -592,8 +592,14 @@ class OpenRouterReasoningProvider {
       
       const data = await response.json();
       console.log('✅ OpenRouter Reasoning Success!');
+      console.log('Response data:', data);
       
       const content = data.choices?.[0]?.message?.content || 'No response received';
+      
+      if (!content || content === 'No response received') {
+        console.error('❌ No content in OpenRouter response:', data);
+        throw new Error('OpenRouter returned empty response');
+      }
       
       return {
         content: content,
@@ -665,7 +671,7 @@ class BraveSearchProvider {
   }
   
   async search(query, options = {}) {
-    // Check multiple sources for the API key
+    // Check multiple sources for API key with better debugging
     const apiKey = this.apiKey || 
                    localStorage.getItem('ws_brave_search') || 
                    document.getElementById('cfg-brave-search')?.value || '';
@@ -673,7 +679,9 @@ class BraveSearchProvider {
     console.log('🔍 Brave Search API Check:');
     console.log('- this.apiKey:', !!this.apiKey);
     console.log('- localStorage ws_brave_search:', !!localStorage.getItem('ws_brave_search'));
+    console.log('- input field value:', !!document.getElementById('cfg-brave-search')?.value);
     console.log('- Final apiKey:', !!apiKey);
+    console.log('- apiKey length:', apiKey?.length || 0);
     
     if (!apiKey) {
       // Fallback to DuckDuckGo if no Brave API key
@@ -709,6 +717,7 @@ class BraveSearchProvider {
       
       console.log('📊 Brave Response Status:', response.status);
       console.log('📊 Brave Response OK:', response.ok);
+      console.log('📊 Brave Response Headers:', Object.fromEntries(response.headers.entries()));
       
       if (!response.ok) {
         const errorText = await response.text();
@@ -719,6 +728,7 @@ class BraveSearchProvider {
       const data = await response.json();
       console.log('✅ Brave Search Success!');
       console.log('Results count:', data.web?.results?.length || 0);
+      console.log('Sample result:', data.web?.results?.[0]);
       
       return {
         results: this.formatBraveResults(data),
@@ -780,6 +790,11 @@ class BraveSearchProvider {
       
       const data = await response.json();
       console.log('✅ DuckDuckGo Fallback Success!');
+      
+      // Open DuckDuckGo immediately in new tab
+      const searchUrl = `https://duckduckgo.com/?q=${encodeURIComponent(searchQuery)}&ia=web`;
+      console.log('🔗 Opening DuckDuckGo in new tab:', searchUrl);
+      window.open(searchUrl, '_blank');
       
       const results = [];
       
