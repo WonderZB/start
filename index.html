@@ -980,7 +980,7 @@ async function callGrokAPI(bubbleId, timestamp, query){
       'Authorization':`Bearer ${grokKey}`
     },
     body:JSON.stringify({
-      model:'grok-2-latest',  // Latest Grok model
+      model:'grok-2-mini',  // Use correct model name
       messages:currentMessages.map(m=>({
         role:m.role,
         content:m.parts.map(p=>p.text||`[Image: ${p.inlineData?.mimeType||'image'}]`).join('\n')
@@ -993,13 +993,15 @@ async function callGrokAPI(bubbleId, timestamp, query){
   
   if(!res.ok){
     const errorText=await res.text();
+    console.error('Grok API Error Response:', errorText);
+    console.error('Status:', res.status, res.statusText);
     if(res.status===402){
       throw new Error('Grok credits exhausted. Please check console.x.ai for billing.');
     }
     throw new Error(`Grok HTTP ${res.status}: ${res.statusText}`);
   }
   
-  await processStreamingResponse(res, bubbleId, timestamp, query, 'Grok-2');
+  await processStreamingResponse(res, bubbleId, timestamp, query, 'Grok-2-Mini');
 }
 
 async function callOpenRouterAPI(bubbleId, timestamp, query){
@@ -1079,6 +1081,7 @@ async function generateGrokImage(prompt){
   }
   
   try{
+    console.log('🎨 Generating image with Grok:', prompt);
     const res=await fetch('https://api.x.ai/v1/images/generations',{
       method:'POST',
       headers:{
@@ -1096,6 +1099,7 @@ async function generateGrokImage(prompt){
     
     if(!res.ok){
       const errorText=await res.text();
+      console.error('Grok Image API Error:', errorText);
       if(res.status===402){
         throw new Error('Grok image credits exhausted. Please check console.x.ai for billing.');
       }
@@ -1103,6 +1107,7 @@ async function generateGrokImage(prompt){
     }
     
     const data=await res.json();
+    console.log('✅ Grok Image Generated:', data.data[0].url);
     return data.data[0].url;
   }catch(e){
     console.error('Grok Image Error:', e);
