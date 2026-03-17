@@ -913,7 +913,8 @@ function saveSettings(){
   if(fb){
     try{const cfg=JSON.parse(fb);if(cfg.apiKey){fbConfigObj=cfg;localStorage.setItem('ws_fb',fb);if(fbConfigObj){initFirebase();}}else{e.textContent='Invalid Firebase JSON';}}
     catch{e.textContent='Invalid Firebase JSON';}
-  }
+  if(!e.textContent){closeSettings();}
+}
   if(!e.textContent){closeSettings();}
 }
 
@@ -1039,17 +1040,13 @@ async function callPuterAI(bubbleId, timestamp, query){
     console.log('- Model: grok-2');
     console.log('- Messages count:', currentMessages.length);
     
-    // Use Puter AI chat completions
-    const response = await window.puterAI.chat.completions.create({
+    // Use Puter AI chat completions with correct structure
+    const response = await puterAI.chat({
       model: 'grok-2',
       messages: currentMessages.map(m=>({
         role: m.role,
         content: m.parts.map(p=>p.text||`[Image: ${p.inlineData?.mimeType||'image'}]`).join('\n')
       }))
-      }),
-      stream: true,
-      max_tokens: 4000,
-      temperature: 0.3
     });
     
     console.log('📊 Puter Response Status:', response.status);
