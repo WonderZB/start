@@ -172,10 +172,10 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'DM San
 #sb-backdrop.open{display:block}
 #mode-bar-title{display:none}
 #main-col{min-height:0;height:100vh;height:100dvh}
-#thread{padding:.75rem .75rem .5rem;-webkit-overflow-scrolling:touch;flex:1;min-height:0;padding-bottom:100px}
+#thread{padding:.75rem .75rem 150px;-webkit-overflow-scrolling:touch;flex:1;min-height:0}
 .msg{max-width:100%}
 .bubble{max-width:92%;font-size:.9rem}
-#input-bar{flex-shrink:0;padding:.5rem .75rem env(safe-area-inset-bottom,.5rem);position:fixed;bottom:0;left:0;right:0;background:var(--bg);z-index:20}
+#input-bar{flex-shrink:0;padding:.5rem .75rem calc(.5rem + env(safe-area-inset-bottom,.5rem));position:fixed;bottom:0;left:0;right:0;background:var(--bg);z-index:20}
 .ib-inner{max-width:100%}
 .ib-hint{display:none}
 #query{font-size:16px}
@@ -705,7 +705,27 @@ function hideEmpty(){document.getElementById('empty')&&document.getElementById('
 let userScrolledUp=false;
 
 // keyboard handling — CSS dvh does most of the work
-function initViewportHandling(){}
+function initViewportHandling(){
+  // Handle mobile keyboard showing/hiding
+  if(window.innerWidth<=768){
+    const query=document.getElementById('query');
+    if(query){
+      query.addEventListener('focus',()=>{
+        // When keyboard shows, ensure input is visible
+        setTimeout(()=>{
+          window.scrollTo(0, document.body.scrollHeight);
+        }, 300);
+      });
+      
+      query.addEventListener('blur',()=>{
+        // When keyboard hides, reset scroll
+        setTimeout(()=>{
+          window.scrollTo(0, 0);
+        }, 100);
+      });
+    }
+  }
+}
 
 function initScrollListener(){
   const t=document.getElementById('thread');
@@ -831,37 +851,19 @@ async function sendToAI(query){
   currentMessages.push({role:'user',parts:[{text:query},...pendingImages.map(img=>({inlineData:{mimeType:img.mimeType,data:img.data}}))],timestamp});
   currentMessages.push({role:'assistant',parts:[{text:''}],timestamp});
   try{
-    // Use a more capable free model for complex reasoning
+    // Use known working free models
     let res=await fetch('https://openrouter.ai/api/v1/chat/completions',{
       method:'POST',headers:{'Content-Type':'application/json','Authorization':`Bearer ${aiKey}`,'HTTP-Referer':location.origin,'X-Title':'WonderStart'},
       body:JSON.stringify({
-        model:'qwen/qwen-2.5-7b-instruct:free',
+        model:'meta-llama/llama-3.2-3b-instruct:free',
         messages:currentMessages.map(m=>({role:m.role,content:m.parts.map(p=>p.text||`[Image: ${p.inlineData?.mimeType||'image'}]`).join('\n')})),
         stream:true,
-        max_tokens:8000,
-        temperature:0.3,  // Lower temperature for more focused reasoning
-        top_p:0.9,
-        frequency_penalty:0.1,
-        presence_penalty:0.1
+        max_tokens:4000,
+        temperature:0.7
       })
     });
     
-    // If that fails, try another capable free model
-    if(!res.ok){
-      res=await fetch('https://openrouter.ai/api/v1/chat/completions',{
-        method:'POST',headers:{'Content-Type':'application/json','Authorization':`Bearer ${aiKey}`,'HTTP-Referer':location.origin,'X-Title':'WonderStart'},
-        body:JSON.stringify({
-          model:'meta-llama/llama-3.1-70b-instruct:free',
-          messages:currentMessages.map(m=>({role:m.role,content:m.parts.map(p=>p.text||`[Image: ${p.inlineData?.mimeType||'image'}]`).join('\n')})),
-          stream:true,
-          max_tokens:8000,
-          temperature:0.3,
-          top_p:0.9
-        })
-      });
-    }
-    
-    // Final fallback to smaller model if needed
+    // Fallback to another free model
     if(!res.ok){
       res=await fetch('https://openrouter.ai/api/v1/chat/completions',{
         method:'POST',headers:{'Content-Type':'application/json','Authorization':`Bearer ${aiKey}`,'HTTP-Referer':location.origin,'X-Title':'WonderStart'},
@@ -870,7 +872,7 @@ async function sendToAI(query){
           messages:currentMessages.map(m=>({role:m.role,content:m.parts.map(p=>p.text||`[Image: ${p.inlineData?.mimeType||'image'}]`).join('\n')})),
           stream:true,
           max_tokens:4000,
-          temperature:0.3
+          temperature:0.7
         })
       });
     }
@@ -878,7 +880,7 @@ async function sendToAI(query){
     if(!res.ok){
       const errorText=await res.text();
       if(res.status===402){
-        throw new Error('API requires payment. Please add credits to your OpenRouter account or try a different model.');
+        throw new Error('API requires payment. Please add credits to your OpenRouter account.');
       }
       throw new Error(`HTTP ${res.status}: ${res.statusText}`);
     }
@@ -914,8 +916,7 @@ async function sendToAI(query){
       throw new Error('No content received from AI');
     }
     
-    const modelName=res.url.includes('qwen')?'Qwen-2.5-7B':res.url.includes('llama-3.1-70b')?'LLaMA-3.1-70B':'Phi-3-Mini';
-    updateAssistantBubble(bubbleId,fullText,true,modelName);
+    updateAssistantBubble(bubbleId,fullText,true,'LLaMA-3.2-3B');
     currentMessages[currentMessages.length-1].parts[0].text=fullText;
     await persistChat({id:currentChatId,title:generateChatTitle(query,fullText),updatedAt:timestamp,messages:currentMessages});
   }catch(e){
