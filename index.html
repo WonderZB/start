@@ -543,7 +543,7 @@ class OpenRouterReasoningProvider {
       console.log('🧠 Calling OpenRouter Reasoning API...');
       
       // Use Riverflow V2 Pro as requested
-      const model = 'riverflow/riverflow-v2-pro:free';
+      const model = 'sourceful/riverflow-v2-pro';
       
       console.log('- Model:', model);
       console.log('- Messages:', message);
@@ -661,11 +661,10 @@ class OpenRouterReasoningProvider {
   }
 }
 
-// ── BRAVE SEARCH PROVIDER (WITH CORS PROXY) ─────────────────
+// ── BRAVE SEARCH PROVIDER (SIMPLIFIED CORS FIX) ───────────────
 class BraveSearchProvider {
   constructor() {
-    // Use CORS proxy for Brave Search API
-    this.baseUrl = 'https://api.allorigins.win/raw?url=https://api.search.brave.com/res/v1/web/search';
+    this.baseUrl = 'https://api.search.brave.com/res/v1/web/search';
     this.apiKey = null;
   }
   
@@ -673,12 +672,12 @@ class BraveSearchProvider {
     // Check multiple sources for API key with better debugging
     const apiKey = this.apiKey || 
                    localStorage.getItem('ws_brave_search') || 
-                   document.getElementById('cfg-brave_search')?.value || '';
+                   document.getElementById('cfg-brave-search')?.value || '';
     
     console.log('🔍 Brave Search API Check:');
     console.log('- this.apiKey:', !!this.apiKey);
     console.log('- localStorage ws_brave_search:', !!localStorage.getItem('ws_brave_search'));
-    console.log('- input field value:', !!document.getElementById('cfg-brave_search')?.value);
+    console.log('- input field value:', !!document.getElementById('cfg-brave-search')?.value);
     console.log('- Final apiKey:', !!apiKey);
     console.log('- apiKey length:', apiKey?.length || 0);
     
@@ -691,7 +690,6 @@ class BraveSearchProvider {
     try {
       console.log('🔍 Brave Search API:', query);
       console.log('- Using API key:', apiKey.substring(0, 10) + '...');
-      console.log('- Using CORS proxy:', this.baseUrl);
       
       const params = new URLSearchParams({
         q: query,
@@ -707,14 +705,46 @@ class BraveSearchProvider {
       }
       
       // Build the Brave API URL
-      const braveUrl = `https://api.search.brave.com/res/v1/web/search?${params}`;
+      const braveUrl = `${this.baseUrl}?${params}`;
       console.log('🔗 Brave API URL:', braveUrl);
       
-      // Use CORS proxy
+      // Try direct fetch first (might work with proper headers)
+      try {
+        const response = await fetch(braveUrl, {
+          method: 'GET',
+          headers: {
+            'Accept': 'application/json',
+            'Accept-Encoding': 'gzip',
+            'X-Subscription-Token': apiKey
+          }
+        });
+        
+        console.log('📊 Brave Direct Response Status:', response.status);
+        console.log('📊 Brave Direct Response OK:', response.ok);
+        
+        if (response.ok) {
+          const data = await response.json();
+          console.log('✅ Brave Direct Success!');
+          console.log('Results count:', data.web?.results?.length || 0);
+          
+          return {
+            results: this.formatBraveResults(data),
+            instantAnswer: null,
+            instantAnswerSource: null,
+            query: query,
+            provider: 'brave_search'
+          };
+        }
+      } catch (directError) {
+        console.log('❌ Direct Brave failed, trying proxy:', directError.message);
+      }
+      
+      // Fallback to proxy if direct fails
+      console.log('🔄 Trying CORS proxy...');
       const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(braveUrl)}`;
       console.log('🔗 Proxy URL:', proxyUrl);
       
-      const response = await fetch(proxyUrl, {
+      const proxyResponse = await fetch(proxyUrl, {
         method: 'GET',
         headers: {
           'Accept': 'application/json',
@@ -722,24 +752,20 @@ class BraveSearchProvider {
         }
       });
       
-      console.log('📊 Brave Response Status:', response.status);
-      console.log('📊 Brave Response OK:', response.ok);
-      console.log('📊 Brave Response Headers:', Object.fromEntries(response.headers.entries()));
+      console.log('📊 Brave Proxy Response Status:', proxyResponse.status);
+      console.log('📊 Brave Proxy Response OK:', proxyResponse.ok);
       
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error('❌ Brave Search Error Response:', errorText);
-        throw new Error(`Brave Search HTTP ${response.status}: ${response.statusText}`);
+      if (!proxyResponse.ok) {
+        throw new Error(`Brave Proxy HTTP ${proxyResponse.status}: ${proxyResponse.statusText}`);
       }
       
-      const data = await response.json();
-      console.log('✅ Brave Search Success!');
+      const data = await proxyResponse.json();
+      console.log('✅ Brave Proxy Success!');
       console.log('Results count:', data.web?.results?.length || 0);
-      console.log('Sample result:', data.web?.results?.[0]);
       
       return {
         results: this.formatBraveResults(data),
-        instantAnswer: null, // Brave doesn't provide instant answers
+        instantAnswer: null,
         instantAnswerSource: null,
         query: query,
         provider: 'brave_search'
@@ -772,73 +798,27 @@ class BraveSearchProvider {
   }
   
   async fallbackToDuckDuckGo(query, options) {
-    // Original DuckDuckGo implementation as fallback
+    console.log('🦆 DuckDuckGo Fallback:', query);
+    
+    // Open DuckDuckGo immediately in new tab
+    const searchUrl = `https://duckduckgo.com/?q=${encodeURIComponent(query)}&ia=web`;
+    console.log('🔗 Opening DuckDuckGo in new tab:', searchUrl);
+    
     try {
-      console.log('🦆 Fallback to DuckDuckGo Search:', query);
-      
-      let searchQuery = query;
-      if (options.location) {
-        searchQuery += ` ${options.location}`;
-      }
-      if (options.domain_filter) {
-        searchQuery += ' ' + options.domain_filter.map(d => `site:${d}`).join(' OR ');
-      }
-      
-      const response = await fetch(`https://api.duckduckgo.com/?q=${encodeURIComponent(searchQuery)}&format=json`, {
-        method: 'GET',
-        headers: {
-          'Accept': 'application/json'
-        }
-      });
-      
-      if (!response.ok) {
-        throw new Error(`DuckDuckGo HTTP ${response.status}: ${response.statusText}`);
-      }
-      
-      const data = await response.json();
-      console.log('✅ DuckDuckGo Fallback Success!');
-      
-      // Open DuckDuckGo immediately in new tab
-      const searchUrl = `https://duckduckgo.com/?q=${encodeURIComponent(searchQuery)}&ia=web`;
-      console.log('🔗 Opening DuckDuckGo in new tab:', searchUrl);
-      window.open(searchUrl, '_blank');
-      
-      const results = [];
-      
-      if (data.Abstract && data.AbstractURL) {
-        results.push({
-          title: data.Heading || 'Instant Answer',
-          url: data.AbstractURL,
-          snippet: data.Abstract,
-          source: data.AbstractSource || 'Wikipedia'
-        });
-      }
-      
-      if (data.RelatedTopics && Array.isArray(data.RelatedTopics)) {
-        data.RelatedTopics.slice(0, 5).forEach(topic => {
-          if (topic.Text && topic.FirstURL) {
-            results.push({
-              title: topic.Text.split(' - ')[0] || topic.Text,
-              url: topic.FirstURL,
-              snippet: topic.Text,
-              source: 'DuckDuckGo'
-            });
-          }
-        });
-      }
-      
-      return {
-        results: results,
-        instantAnswer: data.Abstract || null,
-        instantAnswerSource: data.AbstractURL || null,
-        query: query,
-        provider: 'duckduckgo_fallback'
-      };
-      
+      window.open(searchUrl, '_blank', 'noopener,noreferrer');
+      console.log('✅ DuckDuckGo tab opened successfully');
     } catch (e) {
-      console.error('💥 DuckDuckGo Fallback Error:', e);
-      throw new Error(`Search Error: ${e.message}`);
+      console.error('❌ Failed to open DuckDuckGo tab:', e);
     }
+    
+    // Return minimal results for display
+    return {
+      results: [],
+      instantAnswer: null,
+      instantAnswerSource: null,
+      query: query,
+      provider: 'duckduckgo_fallback'
+    };
   }
   
   openInNewTab(query) {
