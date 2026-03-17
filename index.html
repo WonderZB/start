@@ -555,10 +555,17 @@ function renderSidebar(){
       const n=c.messages?Math.floor(c.messages.length/2):0;
       const turns=n>0?` <span style="color:var(--muted);font-size:.67rem">${n}</span>`:'';
       const createdDate=c.updatedAt?new Date(c.updatedAt).toLocaleDateString():'';
-      const createdTime=c.updatedAt?new Date(c.updatedAt).toLocaleTimeString():'';
+      const createdTime=c.updatedAt?new Date(c.updatedAt).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}):'';
       const timeInfo=createdDate!==new Date().toLocaleDateString()?createdDate:createdTime;
+      const started=c.messages&&c.messages[0]?new Date(c.messages[0].timestamp||c.updatedAt).toLocaleDateString():'';
       html+=`<div class="ci${active}" onclick="loadChat('${c.id}')">
-        <span class="ct">${escH(c.title||'Untitled')}${turns}</span>
+        <div style="flex:1;min-width:0">
+          <div class="ct">${escH(c.title||'Untitled')}${turns}</div>
+          <div style="font-size:.65rem;color:var(--muted);margin-top:.2rem;display:flex;gap:.5rem;">
+            <span>Started: ${started}</span>
+            <span>Updated: ${timeInfo}</span>
+          </div>
+        </div>
         <button class="cd" onclick="event.stopPropagation();deleteChat('${c.id}')">×</button>
       </div>`;
     }
@@ -743,6 +750,10 @@ function setMode(m){
   document.getElementById('btn-ai').classList.toggle('active',m==='ai');
   document.getElementById('btn-search').classList.toggle('active',m==='search');
   document.getElementById('query').placeholder=m==='ai'?'Ask anything…':'Search the web…';
+  // Focus on desktop only (not mobile)
+  if(window.innerWidth>768){
+    document.getElementById('query').focus();
+  }
 }
 function autoResize(el){el.style.height='auto';el.style.height=Math.min(el.scrollHeight,180)+'px';}
 function handleKey(e){
@@ -820,9 +831,16 @@ async function sendToAI(query){
       method:'POST',headers:{'Content-Type':'application/json','Authorization':`Bearer ${aiKey}`,'HTTP-Referer':location.origin,'X-Title':'WonderStart'},
       body:JSON.stringify({model:'qwen/qwen-2.5-7b-instruct',messages:currentMessages.map(m=>({role:m.role,content:m.parts.map(p=>p.text||`[Image: ${p.inlineData?.mimeType||'image'}]`).join('\n')})),stream:true,max_tokens:4000,temperature:0.7})
     });
+    
+    if(!res.ok){
+      throw new Error(`HTTP ${res.status}: ${res.statusText}`);
+    }
+    
     const reader=res.body.getReader();
     const decoder=new TextDecoder();
     let fullText='';
+    let hasContent=false;
+    
     while(true){
       const{done,value}=await reader.read();
       if(done)break;
@@ -836,15 +854,24 @@ async function sendToAI(query){
           const content=parsed.choices?.[0]?.delta?.content||'';
           if(content){
             fullText+=content;
+            hasContent=true;
             updateAssistantBubble(bubbleId,fullText,false);
           }
-        }catch{}
+        }catch(e){
+          console.error('Parse error:', e, 'Data:', data);
+        }
       }
     }
+    
+    if(!hasContent){
+      throw new Error('No content received from AI');
+    }
+    
     updateAssistantBubble(bubbleId,fullText,true,'qwen-2.5-7b');
     currentMessages[currentMessages.length-1].parts[0].text=fullText;
     await persistChat({id:currentChatId,title:generateChatTitle(query,fullText),updatedAt:timestamp,messages:currentMessages});
   }catch(e){
+    console.error('AI Error:', e);
     updateAssistantBubble(bubbleId,'Error: '+e.message,true);
   }finally{
     streaming=false;
