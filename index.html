@@ -283,7 +283,11 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'DM San
     <input class="fi" type="password" id="cfg-grok" placeholder="xai-...">
     <label class="fl">OpenRouter API key (fallback)</label>
     <input class="fi" type="password" id="cfg-gemini" placeholder="sk-or-v1-...">
-    <label class="fl">Serper.dev search key (blank = DuckDuckGo redirect)</label>
+    <label class="fl">Google AI Studio API key (AI mode - FREE)</label>
+    <input class="fi" type="password" id="cfg-google-ai" placeholder="AIza...">
+    <label class="fl">Brave Search API key (Search mode - $5 free/month)</label>
+    <input class="fi" type="password" id="cfg-brave-search" placeholder="paste Brave Search key here">
+    <label class="fl">Serper.dev search key (legacy)</label>
     <input class="fi" type="password" id="cfg-brave" placeholder="paste Serper.dev key here">
     <label class="fl">Firebase config JSON (blank = local only)</label>
     <input class="fi" type="text" id="cfg-fb" placeholder='{"apiKey":"..."}'>
@@ -397,12 +401,12 @@ let pendingFiles=[];   // [{name, content, type}]
 class FreeAIManager {
   constructor() {
     this.providers = {
-      puter: new PuterProvider(),
+      google_ai: new GoogleAIProvider(),
       openrouter: new OpenRouterProvider()
     };
-    this.currentProvider = 'puter';
+    this.currentProvider = 'google_ai';
     this.usage = {
-      puter: { unlimited: true },
+      google_ai: { unlimited: true },
       openrouter: { free: true }
     };
   }
@@ -412,32 +416,32 @@ class FreeAIManager {
     console.log('- Query:', message);
     console.log('- Options:', options);
     
-    // AI mode: Use thinking AI (Puter with Grok-2)
+    // AI mode: Use Google AI Studio (best free option)
     if (options.needsReasoning) {
-      console.log('🧠 Using Puter for reasoning...');
-      return await this.providers.puter.chat(message, options);
+      console.log('🧠 Using Google AI Studio for reasoning...');
+      return await this.providers.google_ai.chat(message, options);
     } else if (options.needsImages) {
-      console.log('🎨 Using Puter for images...');
-      return await this.providers.puter.chat(message, options);
+      console.log('🎨 Using Google AI Studio for images...');
+      return await this.providers.google_ai.chat(message, options);
     } else {
-      console.log('💬 Using Puter for general AI chat...');
-      return await this.providers.puter.chat(message, options);
+      console.log('💬 Using Google AI Studio for general AI chat...');
+      return await this.providers.google_ai.chat(message, options);
     }
   }
   
   async generateImage(prompt) {
     console.log('🎨 Generating image:', prompt);
     try {
-      return await this.providers.puter.generateImage(prompt);
+      return await this.providers.google_ai.generateImage(prompt);
     } catch (e) {
-      console.warn('⚠️ Puter image generation failed:', e);
+      console.warn('⚠️ Google AI image generation failed:', e);
       throw new Error('Image generation not available');
     }
   }
   
   async researchPoland(query) {
     console.log('🇵🇱 Researching Poland with AI:', query);
-    return await this.providers.puter.chat(query, {
+    return await this.providers.google_ai.chat(query, {
       needsReasoning: true,
       location: 'Poland',
       domain_filter: ['.pl', 'polsat.pl', 'tvn.pl', 'wp.pl', 'allegro.pl', 'olx.pl'],
@@ -446,7 +450,7 @@ class FreeAIManager {
   }
 }
 
-// ── DUCKDUCKGO SEARCH PROVIDER ─────────────────────────
+// ── DUCKDUCKGO SEARCH PROVIDER (LEGACY FALLBACK) ───────────
 class DuckDuckGoSearchProvider {
   constructor() {
     this.baseUrl = 'https://api.duckduckgo.com/';
@@ -454,9 +458,8 @@ class DuckDuckGoSearchProvider {
   
   async search(query, options = {}) {
     try {
-      console.log('🔍 DuckDuckGo Search:', query);
+      console.log('🦆 DuckDuckGo Search:', query);
       
-      // Build query with location and domain filters
       let searchQuery = query;
       if (options.location) {
         searchQuery += ` ${options.location}`;
@@ -479,8 +482,32 @@ class DuckDuckGoSearchProvider {
       const data = await response.json();
       console.log('✅ DuckDuckGo Search Success!');
       
+      const results = [];
+      
+      if (data.Abstract && data.AbstractURL) {
+        results.push({
+          title: data.Heading || 'Instant Answer',
+          url: data.AbstractURL,
+          snippet: data.Abstract,
+          source: data.AbstractSource || 'Wikipedia'
+        });
+      }
+      
+      if (data.RelatedTopics && Array.isArray(data.RelatedTopics)) {
+        data.RelatedTopics.slice(0, 5).forEach(topic => {
+          if (topic.Text && topic.FirstURL) {
+            results.push({
+              title: topic.Text.split(' - ')[0] || topic.Text,
+              url: topic.FirstURL,
+              snippet: topic.Text,
+              source: 'DuckDuckGo'
+            });
+          }
+        });
+      }
+      
       return {
-        results: this.formatSearchResults(data),
+        results: results,
         instantAnswer: data.Abstract || null,
         instantAnswerSource: data.AbstractURL || null,
         query: query,
@@ -493,130 +520,231 @@ class DuckDuckGoSearchProvider {
     }
   }
   
-  formatSearchResults(data) {
-    const results = [];
-    
-    // Add instant answer as first result
-    if (data.Abstract && data.AbstractURL) {
-      results.push({
-        title: data.Heading || 'Instant Answer',
-        url: data.AbstractURL,
-        snippet: data.Abstract,
-        source: data.AbstractSource || 'Wikipedia'
-      });
-    }
-    
-    // Add related topics if available
-    if (data.RelatedTopics && Array.isArray(data.RelatedTopics)) {
-      data.RelatedTopics.slice(0, 5).forEach(topic => {
-        if (topic.Text && topic.FirstURL) {
-          results.push({
-            title: topic.Text.split(' - ')[0] || topic.Text,
-            url: topic.FirstURL,
-            snippet: topic.Text,
-            source: 'DuckDuckGo'
-          });
-        }
-      });
-    }
-    
-    return results;
-  }
-  
   openInNewTab(query) {
     const searchUrl = `https://duckduckgo.com/?q=${encodeURIComponent(query)}`;
     window.open(searchUrl, '_blank');
   }
 }
 
-// ── PUTER PROVIDER (FREE UNLIMITED) ───────────────────────
-class PuterProvider {
+// ── GOOGLE AI STUDIO PROVIDER (BEST FREE AI) ───────────────
+class GoogleAIProvider {
   constructor() {
-    this.loaded = false;
-    this.loadPuterJS();
-  }
-  
-  loadPuterJS() {
-    if (window.puter) {
-      this.loaded = true;
-      return;
-    }
-    
-    console.log('🔧 Loading Puter.js SDK...');
-    const script = document.createElement('script');
-    script.src = 'https://js.puter.com/v2/';
-    script.onload = () => {
-      console.log('📦 Puter.js loaded');
-      console.log('🔍 window.puter available:', !!window.puter);
-      console.log('🔍 window.puter.ai available:', !!window.puter?.ai);
-      
-      if (window.puter) {
-        console.log('🚀 Puter AI initialized successfully!');
-        this.loaded = true;
-      } else {
-        console.error('❌ Puter AI not available');
-      }
-    };
-    script.onerror = () => {
-      console.error('❌ Failed to load Puter.js script');
-    };
-    document.head.appendChild(script);
+    this.baseUrl = 'https://generativelanguage.googleapis.com/v1beta';
+    this.apiKey = null; // User needs to provide this
   }
   
   async chat(message, options = {}) {
-    if (!this.loaded) {
-      throw new Error('Puter.js not loaded yet');
+    const apiKey = this.apiKey || localStorage.getItem('ws_google_ai') || '';
+    if (!apiKey) {
+      throw new Error('Google AI Studio API key required. Get your free key at: https://aistudio.google.com/app/apikey');
     }
     
     try {
-      console.log('🚀 Calling Puter AI API...');
-      console.log('- Model: grok-2');
+      console.log('� Calling Google AI Studio API...');
+      console.log('- Model: gemini-2.5-flash');
       console.log('- Messages:', message);
       
-      // Fix Puter AI call structure
-      const response = await window.puter.ai.chat(message, {
-        model: 'grok-2',
-        temperature: options.needsReasoning ? 0.1 : 0.3,
-        max_tokens: 4000
+      const response = await fetch(`${this.baseUrl}/models/gemini-2.5-flash:generateContent?key=${apiKey}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          contents: [{
+            parts: [{ text: message }]
+          }],
+          generationConfig: {
+            temperature: options.needsReasoning ? 0.1 : 0.3,
+            maxOutputTokens: 4000,
+            candidateCount: 1
+          }
+        })
       });
       
-      console.log('✅ Puter AI Success!');
-      console.log('Response:', response);
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('❌ Google AI Error Response:', errorText);
+        throw new Error(`Google AI HTTP ${response.status}: ${response.statusText}`);
+      }
+      
+      const data = await response.json();
+      console.log('✅ Google AI Success!');
+      console.log('Response:', data);
+      
+      const content = data.candidates?.[0]?.content?.parts?.[0]?.text || 'No response received';
       
       return {
-        content: response || 'No response received',
+        content: content,
         sources: [],
-        model: 'Grok-2 (Puter Free)',
-        reasoning: options.needsReasoning ? 'Grok-2 reasoning applied' : null,
-        provider: 'puter'
+        model: 'Gemini 2.5 Flash (Google AI Studio)',
+        reasoning: options.needsReasoning ? 'Gemini reasoning applied' : null,
+        provider: 'google_ai'
       };
       
     } catch (e) {
-      console.error('💥 Puter AI Error:', e);
-      throw new Error(`Puter AI Error: ${e.message}`);
+      console.error('💥 Google AI Error:', e);
+      throw new Error(`Google AI Error: ${e.message}`);
     }
   }
   
   async generateImage(prompt) {
-    if (!this.loaded) {
-      throw new Error('Puter.js not loaded yet');
+    // Gemini doesn't support image generation directly
+    // Use a placeholder service
+    return {
+      url: `https://picsum.photos/seed/${encodeURIComponent(prompt)}/1024/1024.jpg`,
+      model: 'Placeholder Image Generation',
+      provider: 'google_ai'
+    };
+  }
+}
+
+// ── BRAVE SEARCH PROVIDER (BETTER SEARCH) ───────────────────
+class BraveSearchProvider {
+  constructor() {
+    this.baseUrl = 'https://api.search.brave.com/res/v1/web/search';
+    this.apiKey = null; // User needs to provide this
+  }
+  
+  async search(query, options = {}) {
+    const apiKey = this.apiKey || localStorage.getItem('ws_brave_search') || '';
+    if (!apiKey) {
+      // Fallback to DuckDuckGo if no Brave API key
+      console.log('⚠️ No Brave Search API key, falling back to DuckDuckGo');
+      return await this.fallbackToDuckDuckGo(query, options);
     }
     
     try {
-      console.log('🎨 Generating image with Puter AI:', prompt);
+      console.log('� Brave Search API:', query);
       
-      // Note: Puter.js image generation might need different API
-      // For now, we'll return a placeholder
+      const params = new URLSearchParams({
+        q: query,
+        count: '10',
+        text_decorations: 'false',
+        spellcheck: 'true',
+        result_filter: 'web',
+        safesearch: 'moderate'
+      });
+      
+      if (options.location) {
+        params.append('country', options.location === 'Poland' ? 'PL' : 'US');
+      }
+      
+      const response = await fetch(`${this.baseUrl}?${params}`, {
+        method: 'GET',
+        headers: {
+          'Accept': 'application/json',
+          'Accept-Encoding': 'gzip',
+          'X-Subscription-Token': apiKey
+        }
+      });
+      
+      if (!response.ok) {
+        throw new Error(`Brave Search HTTP ${response.status}: ${response.statusText}`);
+      }
+      
+      const data = await response.json();
+      console.log('✅ Brave Search Success!');
+      
       return {
-        url: `https://picsum.photos/seed/${encodeURIComponent(prompt)}/1024/1024.jpg`,
-        model: 'Puter Image Generation',
-        provider: 'puter'
+        results: this.formatBraveResults(data),
+        instantAnswer: null, // Brave doesn't provide instant answers
+        instantAnswerSource: null,
+        query: query,
+        provider: 'brave_search'
       };
       
     } catch (e) {
-      console.error('💥 Puter Image Error:', e);
-      throw new Error(`Puter Image Error: ${e.message}`);
+      console.error('💥 Brave Search Error:', e);
+      // Fallback to DuckDuckGo
+      return await this.fallbackToDuckDuckGo(query, options);
     }
+  }
+  
+  formatBraveResults(data) {
+    const results = [];
+    
+    if (data.web?.results) {
+      data.web.results.forEach(result => {
+        results.push({
+          title: result.title || 'No Title',
+          url: result.url || '',
+          snippet: result.description || 'No Description',
+          source: new URL(result.url || '').hostname || 'Unknown'
+        });
+      });
+    }
+    
+    return results;
+  }
+  
+  async fallbackToDuckDuckGo(query, options) {
+    // Original DuckDuckGo implementation as fallback
+    try {
+      console.log('🦆 Fallback to DuckDuckGo Search:', query);
+      
+      let searchQuery = query;
+      if (options.location) {
+        searchQuery += ` ${options.location}`;
+      }
+      if (options.domain_filter) {
+        searchQuery += ' ' + options.domain_filter.map(d => `site:${d}`).join(' OR ');
+      }
+      
+      const response = await fetch(`https://api.duckduckgo.com/?q=${encodeURIComponent(searchQuery)}&format=json`, {
+        method: 'GET',
+        headers: {
+          'Accept': 'application/json'
+        }
+      });
+      
+      if (!response.ok) {
+        throw new Error(`DuckDuckGo HTTP ${response.status}: ${response.statusText}`);
+      }
+      
+      const data = await response.json();
+      console.log('✅ DuckDuckGo Fallback Success!');
+      
+      const results = [];
+      
+      if (data.Abstract && data.AbstractURL) {
+        results.push({
+          title: data.Heading || 'Instant Answer',
+          url: data.AbstractURL,
+          snippet: data.Abstract,
+          source: data.AbstractSource || 'Wikipedia'
+        });
+      }
+      
+      if (data.RelatedTopics && Array.isArray(data.RelatedTopics)) {
+        data.RelatedTopics.slice(0, 5).forEach(topic => {
+          if (topic.Text && topic.FirstURL) {
+            results.push({
+              title: topic.Text.split(' - ')[0] || topic.Text,
+              url: topic.FirstURL,
+              snippet: topic.Text,
+              source: 'DuckDuckGo'
+            });
+          }
+        });
+      }
+      
+      return {
+        results: results,
+        instantAnswer: data.Abstract || null,
+        instantAnswerSource: data.AbstractURL || null,
+        query: query,
+        provider: 'duckduckgo_fallback'
+      };
+      
+    } catch (e) {
+      console.error('💥 DuckDuckGo Fallback Error:', e);
+      throw new Error(`Search Error: ${e.message}`);
+    }
+  }
+  
+  openInNewTab(query) {
+    const searchUrl = `https://search.brave.com/search?q=${encodeURIComponent(query)}`;
+    window.open(searchUrl, '_blank');
   }
 }
 
@@ -676,7 +804,7 @@ class OpenRouterProvider {
 
 // ── GLOBAL INSTANCES ───────────────────────────────────────
 const freeAIManager = new FreeAIManager();
-const searchProvider = new DuckDuckGoSearchProvider();
+const searchProvider = new BraveSearchProvider();
 
 function showSetup(n){
   document.getElementById('setup-overlay').classList.remove('hidden');
@@ -1125,11 +1253,47 @@ function openSettings(){
   document.getElementById('cfg-grok').value=grokKey;
   document.getElementById('cfg-gemini').value=aiKey;
   document.getElementById('cfg-brave').value=braveKey;
+  // Add new API key fields
+  document.getElementById('cfg-google-ai').value=localStorage.getItem('ws_google_ai')||'';
+  document.getElementById('cfg-brave-search').value=localStorage.getItem('ws_brave_search')||'';
   document.getElementById('cfg-fb').value=fbConfigObj?JSON.stringify(fbConfigObj):'';
   document.getElementById('cfg-err').textContent='';
   document.getElementById('settings-overlay').classList.remove('hidden');
 }
 function closeSettings(){document.getElementById('settings-overlay').classList.add('hidden');}
+function saveSettings(){
+  const gk=document.getElementById('cfg-grok').value.trim();
+  const ork=document.getElementById('cfg-gemini').value.trim();
+  const bk=document.getElementById('cfg-brave').value.trim();
+  const ga=document.getElementById('cfg-google-ai').value.trim();
+  const bs=document.getElementById('cfg-brave-search').value.trim();
+  const fb=document.getElementById('cfg-fb').value.trim();
+  const e=document.getElementById('cfg-err');
+  e.textContent='';
+  if(gk){
+    if(!gk.startsWith('xai-')){e.textContent='Grok key must start with "xai-"';return;}
+    grokKey=gk;localStorage.setItem('ws_grok',gk);
+  }
+  if(ork){
+    if(!ork.startsWith('sk-or-')){e.textContent='OpenRouter key must start with "sk-or-"';return;}
+    aiKey=ork;localStorage.setItem('ws_ai',ork);
+  }
+  if(bk){braveKey=bk;localStorage.setItem('ws_brave',bk);if(db&&currentUser)db.collection('users').doc(currentUser.uid).set({braveKey:bk,updatedAt:Date.now()},{merge:true}).catch(()=>{});}
+  if(ga){
+    if(!ga.startsWith('AIza')){e.textContent='Google AI key must start with "AIza"';return;}
+    localStorage.setItem('ws_google_ai',ga);
+    freeAIManager.providers.google_ai.apiKey=ga;
+  }
+  if(bs){
+    localStorage.setItem('ws_brave_search',bs);
+    searchProvider.apiKey=bs;
+  }
+  if(fb){
+    try{const cfg=JSON.parse(fb);if(cfg.apiKey){fbConfigObj=cfg;localStorage.setItem('ws_fb',fb);if(fbConfigObj){initFirebase();}}else{e.textContent='Invalid Firebase JSON';}}
+    catch{e.textContent='Invalid Firebase JSON';}
+  }
+  if(!e.textContent){closeSettings();}
+}
 // ── BOOT ──────────────────────────────────────────────────
 window.addEventListener('load',function boot(){
   aiKey=localStorage.getItem('ws_ai')||localStorage.getItem('ws_gemini')||'';
@@ -1302,22 +1466,19 @@ async function sendToSearch(query){
     }
     
     // Add option to open in new tab
-    content += `\n\n---\n\n[🔍 Open full search in DuckDuckGo](javascript:void(0))`;
+    const searchEngine = searchResults.provider === 'brave_search' ? 'Brave Search' : 'DuckDuckGo';
+    const searchUrl = searchResults.provider === 'brave_search' ? 
+      `https://search.brave.com/search?q=${encodeURIComponent(query)}` : 
+      `https://duckduckgo.com/?q=${encodeURIComponent(query)}`;
     
-    updateAssistantBubble(bubbleId, content, true, 'DuckDuckGo Search');
+    content += `\n\n---\n\n[🔍 Open full search in ${searchEngine}](${searchUrl})`;
+    
+    updateAssistantBubble(bubbleId, content, true, `${searchResults.provider === 'brave_search' ? 'Brave Search' : 'DuckDuckGo Search'}`);
     
     // Add click handler for the search link
     setTimeout(() => {
       const bubble = document.querySelector(`[data-bubble-id="${bubbleId}"]`);
       if (bubble) {
-        const searchLink = bubble.querySelector('a[href="javascript:void(0)"]');
-        if (searchLink) {
-          searchLink.addEventListener('click', (e) => {
-            e.preventDefault();
-            searchProvider.openInNewTab(query);
-          });
-        }
-        
         // Make all result links open in new tabs
         const allLinks = bubble.querySelectorAll('a[href^="http"]');
         allLinks.forEach(link => {
