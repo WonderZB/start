@@ -397,36 +397,31 @@ let pendingFiles=[];   // [{name, content, type}]
 class FreeAIManager {
   constructor() {
     this.providers = {
-      duckduckgo: new DuckDuckGoProvider(),
       puter: new PuterProvider(),
       openrouter: new OpenRouterProvider()
     };
-    this.currentProvider = 'duckduckgo';
+    this.currentProvider = 'puter';
     this.usage = {
-      duckduckgo: { unlimited: true },
       puter: { unlimited: true },
       openrouter: { free: true }
     };
   }
   
   async chat(message, options = {}) {
-    console.log('🤖 Free AI Request Starting...');
+    console.log('🤖 AI Request Starting...');
     console.log('- Query:', message);
     console.log('- Options:', options);
     
-    // Smart routing based on requirements
-    if (options.needsResearch) {
-      console.log('🔍 Using DuckDuckGo for research...');
-      return await this.providers.duckduckgo.chat(message, options);
+    // AI mode: Use thinking AI (Puter with Grok-2)
+    if (options.needsReasoning) {
+      console.log('🧠 Using Puter for reasoning...');
+      return await this.providers.puter.chat(message, options);
     } else if (options.needsImages) {
       console.log('🎨 Using Puter for images...');
       return await this.providers.puter.chat(message, options);
-    } else if (options.needsReasoning) {
-      console.log('🧠 Using Puter for reasoning...');
-      return await this.providers.puter.chat(message, options);
     } else {
-      console.log('💬 Using DuckDuckGo for basic chat...');
-      return await this.providers.duckduckgo.chat(message, options);
+      console.log('💬 Using Puter for general AI chat...');
+      return await this.providers.puter.chat(message, options);
     }
   }
   
@@ -441,9 +436,9 @@ class FreeAIManager {
   }
   
   async researchPoland(query) {
-    console.log('🇵🇱 Researching Poland:', query);
-    return await this.providers.duckduckgo.chat(query, {
-      needsResearch: true,
+    console.log('🇵🇱 Researching Poland with AI:', query);
+    return await this.providers.puter.chat(query, {
+      needsReasoning: true,
       location: 'Poland',
       domain_filter: ['.pl', 'polsat.pl', 'tvn.pl', 'wp.pl', 'allegro.pl', 'olx.pl'],
       recency: 'month'
@@ -451,26 +446,26 @@ class FreeAIManager {
   }
 }
 
-// ── DUCKDUCKGO PROVIDER (TRULY FREE) ─────────────────────
-class DuckDuckGoProvider {
+// ── DUCKDUCKGO SEARCH PROVIDER ─────────────────────────
+class DuckDuckGoSearchProvider {
   constructor() {
     this.baseUrl = 'https://api.duckduckgo.com/';
   }
   
-  async chat(message, options = {}) {
+  async search(query, options = {}) {
     try {
-      console.log('🦆 Calling DuckDuckGo API...');
+      console.log('🔍 DuckDuckGo Search:', query);
       
       // Build query with location and domain filters
-      let query = message;
+      let searchQuery = query;
       if (options.location) {
-        query += ` ${options.location}`;
+        searchQuery += ` ${options.location}`;
       }
       if (options.domain_filter) {
-        query += ' ' + options.domain_filter.map(d => `site:${d}`).join(' OR ');
+        searchQuery += ' ' + options.domain_filter.map(d => `site:${d}`).join(' OR ');
       }
       
-      const response = await fetch(`${this.baseUrl}?q=${encodeURIComponent(query)}&format=json`, {
+      const response = await fetch(`${this.baseUrl}?q=${encodeURIComponent(searchQuery)}&format=json`, {
         method: 'GET',
         headers: {
           'Accept': 'application/json'
@@ -482,46 +477,55 @@ class DuckDuckGoProvider {
       }
       
       const data = await response.json();
-      console.log('✅ DuckDuckGo Success!');
+      console.log('✅ DuckDuckGo Search Success!');
       
       return {
-        content: this.formatResponse(data, options),
-        sources: data.AbstractURL ? [data.AbstractURL] : [],
-        model: 'DuckDuckGo Instant Answers',
-        reasoning: options.needsResearch ? this.addReasoning(data, options) : null,
+        results: this.formatSearchResults(data),
+        instantAnswer: data.Abstract || null,
+        instantAnswerSource: data.AbstractURL || null,
+        query: query,
         provider: 'duckduckgo'
       };
       
     } catch (e) {
-      console.error('💥 DuckDuckGo Error:', e);
-      throw new Error(`DuckDuckGo Error: ${e.message}`);
+      console.error('💥 DuckDuckGo Search Error:', e);
+      throw new Error(`DuckDuckGo Search Error: ${e.message}`);
     }
   }
   
-  formatResponse(data, options) {
-    let content = '';
+  formatSearchResults(data) {
+    const results = [];
     
-    if (data.Abstract) {
-      content += data.Abstract;
+    // Add instant answer as first result
+    if (data.Abstract && data.AbstractURL) {
+      results.push({
+        title: data.Heading || 'Instant Answer',
+        url: data.AbstractURL,
+        snippet: data.Abstract,
+        source: data.AbstractSource || 'Wikipedia'
+      });
     }
     
-    if (data.AbstractSource && data.AbstractURL) {
-      content += `\n\n**Source:** [${data.AbstractSource}](${data.AbstractURL})`;
+    // Add related topics if available
+    if (data.RelatedTopics && Array.isArray(data.RelatedTopics)) {
+      data.RelatedTopics.slice(0, 5).forEach(topic => {
+        if (topic.Text && topic.FirstURL) {
+          results.push({
+            title: topic.Text.split(' - ')[0] || topic.Text,
+            url: topic.FirstURL,
+            snippet: topic.Text,
+            source: 'DuckDuckGo'
+          });
+        }
+      });
     }
     
-    if (options.needsResearch && !data.Abstract) {
-      content = `I searched for "${options.query || 'information'}" but couldn't find a specific instant answer. Let me provide a general response based on the available information.`;
-    }
-    
-    return content || "I couldn't find specific information for that query. Try rephrasing your question or providing more details.";
+    return results;
   }
   
-  addReasoning(data, options) {
-    return "Let me think through this step by step:\n" +
-           "1. Analyzing the search results...\n" +
-           "2. Identifying key information...\n" +
-           "3. Synthesizing the findings...\n" +
-           "4. Providing a comprehensive answer based on available sources...";
+  openInNewTab(query) {
+    const searchUrl = `https://duckduckgo.com/?q=${encodeURIComponent(query)}`;
+    window.open(searchUrl, '_blank');
   }
 }
 
@@ -610,7 +614,7 @@ class PuterProvider {
       };
       
     } catch (e) {
-      console.error('� Puter Image Error:', e);
+      console.error('💥 Puter Image Error:', e);
       throw new Error(`Puter Image Error: ${e.message}`);
     }
   }
@@ -670,8 +674,9 @@ class OpenRouterProvider {
   }
 }
 
-// ── GLOBAL AI MANAGER INSTANCE ───────────────────────────
+// ── GLOBAL INSTANCES ───────────────────────────────────────
 const freeAIManager = new FreeAIManager();
+const searchProvider = new DuckDuckGoSearchProvider();
 
 function showSetup(n){
   document.getElementById('setup-overlay').classList.remove('hidden');
@@ -1183,7 +1188,7 @@ function submit(){
 }
 
 async function sendToAI(query){
-  console.log('🤖 AI Request Starting...');
+  console.log('🤖 AI Mode Request Starting...');
   console.log('- Query:', query);
   
   streaming=true;
@@ -1209,43 +1214,101 @@ async function sendToAI(query){
   currentMessages.push({role:'assistant',parts:[{text:''}],timestamp});
   
   try{
-    // Determine requirements based on query content
+    // AI mode: Use thinking AI for all queries
     const options = {
-      needsResearch: query.toLowerCase().includes('research') || 
-                     query.toLowerCase().includes('find') || 
-                     query.toLowerCase().includes('best') ||
-                     query.toLowerCase().includes('cheapest') ||
-                     query.toLowerCase().includes('poland'),
-      needsReasoning: query.toLowerCase().includes('think') || 
-                     query.toLowerCase().includes('analyze') ||
-                     query.toLowerCase().includes('explain'),
+      needsReasoning: true, // AI mode always uses reasoning
       needsImages: pendingImages.length > 0
     };
     
-    console.log('🎯 AI Options:', options);
+    console.log('🎯 AI Mode Options:', options);
     
-    // Use the new FreeAIManager
+    // Use the FreeAIManager for AI responses
     const response = await freeAIManager.chat(query, options);
     
     console.log('✅ AI Response:', response);
     
     // Update the assistant bubble with the response
-    updateAssistantBubble(bubbleId, response.content, true, response.model);
+    let content = response.content;
     
     // Add reasoning if available
     if (response.reasoning) {
-      updateAssistantBubble(bubbleId, response.content + '\n\n---\n\n**Reasoning Process:**\n' + response.reasoning, true, response.model);
+      content += '\n\n---\n\n**Reasoning Process:**\n' + response.reasoning;
     }
     
     // Add sources if available
     if (response.sources && response.sources.length > 0) {
-      const sourcesText = '\n\n---\n\n**Sources:**\n' + response.sources.map((source, i) => `${i + 1}. ${source}`).join('\n');
-      updateAssistantBubble(bubbleId, response.content + sourcesText, true, response.model);
+      content += '\n\n---\n\n**Sources:**\n' + response.sources.map((source, i) => `${i + 1}. ${source}`).join('\n');
     }
+    
+    updateAssistantBubble(bubbleId, content, true, response.model);
     
   }catch(e){
     console.error('💥 AI Error:', e);
     updateAssistantBubble(bubbleId,'Error: '+e.message,true);
+  }finally{
+    streaming=false;
+    pendingImages=[];
+    pendingFiles=[];
+    renderAttachPreview();
+  }
+}
+
+async function sendToSearch(query){
+  console.log('🔍 Search Mode Request Starting...');
+  console.log('- Query:', query);
+  
+  streaming=true;
+  addUserBubble(query, pendingImages, pendingFiles);
+  const bubbleId=addAssistantBubble();
+  currentChatId=currentChatId||genId();
+  const timestamp=Date.now();
+  
+  try{
+    // Search mode: Use DuckDuckGo for search results
+    const options = {
+      location: query.toLowerCase().includes('poland') ? 'Poland' : null,
+      domain_filter: query.toLowerCase().includes('poland') ? 
+        ['.pl', 'polsat.pl', 'tvn.pl', 'wp.pl', 'allegro.pl', 'olx.pl'] : null
+    };
+    
+    console.log('🎯 Search Mode Options:', options);
+    
+    // Use the search provider
+    const searchResults = await searchProvider.search(query, options);
+    
+    console.log('✅ Search Results:', searchResults);
+    
+    // Format search results for display
+    let content = `**Search Results for:** ${query}\n\n`;
+    
+    // Add instant answer if available
+    if (searchResults.instantAnswer) {
+      content += `**Instant Answer:**\n${searchResults.instantAnswer}\n\n`;
+      if (searchResults.instantAnswerSource) {
+        content += `**Source:** ${searchResults.instantAnswerSource}\n\n`;
+      }
+    }
+    
+    // Add search results
+    if (searchResults.results && searchResults.results.length > 0) {
+      content += `**Top Results:**\n`;
+      searchResults.results.forEach((result, index) => {
+        content += `\n${index + 1}. **[${result.title}](${result.url})**\n`;
+        content += `   ${result.snippet}\n`;
+        content += `   *Source: ${result.source}*\n`;
+      });
+    } else {
+      content += 'No specific results found. Try different keywords.';
+    }
+    
+    // Add option to open in new tab
+    content += `\n\n---\n\n[🔍 Open full search in DuckDuckGo](javascript:searchProvider.openInNewTab('${encodeURIComponent(query)}'))`;
+    
+    updateAssistantBubble(bubbleId, content, true, 'DuckDuckGo Search');
+    
+  }catch(e){
+    console.error('💥 Search Error:', e);
+    updateAssistantBubble(bubbleId,'Search Error: '+e.message,true);
   }finally{
     streaming=false;
     pendingImages=[];
