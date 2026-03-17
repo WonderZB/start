@@ -358,7 +358,7 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'DM San
   </div>
 </div>
 
-<input type="file" id="file-input" accept="image/*" multiple style="display:none" onchange="handleFiles(this.files)">
+<input type="file" id="file-input" accept="image/*,.txt,.js,.py,.html,.css,.json,.xml,.csv,.md,.log" multiple style="display:none" onchange="handleFiles(this.files)">
 
 <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-app-compat.js"></script>
 
@@ -371,6 +371,7 @@ let mode='ai', aiKey='', braveKey='', fbConfigObj=null, lastModelUsed='', pendin
 let streaming=false, currentChatId=null, currentMessages=[], allChats=[];
 let db=null, fbAuth=null, currentUser=null, fbReady=false;
 let pendingImages=[]; // [{base64, mimeType, previewUrl, name}]
+let pendingFiles=[];   // [{name, content, type}]
 
 // ── BOOT ──────────────────────────────────────────────────
 window.addEventListener('load',function boot(){
@@ -625,11 +626,12 @@ function renderThread(){
   }
 }
 
-function addUserBubble(text, images){
+function addUserBubble(text, images, files){
   hideEmpty();
   const thread=document.getElementById('thread');
   let inner='';
   if(images&&images.length) inner+=images.map(img=>`<img class="msg-img" src="${img.previewUrl}" alt="">`).join('');
+  if(files&&files.length) inner+=files.map(file=>`<div style="background:var(--surface2);border-radius:8px;padding:.5rem;margin:.3rem 0;font-size:.8rem;border:1px solid var(--border)"><div style="font-weight:500;color:var(--accent);margin-bottom:.3rem">📄 ${file.name}</div><div style="font-family:'IBM Plex Mono',monospace;color:var(--muted);max-height:100px;overflow-y:auto">${file.content.substring(0,500)}${file.content.length>500?'...':''}</div></div>`).join('');
   if(text) inner+=`<div>${escH(text)}</div>`;
   const timestamp=new Date().toLocaleTimeString();
   const timeHtml=`<div style="font-size:.7rem;color:var(--muted);margin-top:.3rem;text-align:right">${timestamp}</div>`;
@@ -844,18 +846,32 @@ function submit(){
 async function sendToAI(query){
   if(!aiKey){alert('Please set up your OpenRouter API key in Settings.');return;}
   streaming=true;
-  addUserBubble(query, pendingImages);
+  addUserBubble(query, pendingImages, pendingFiles);
   const bubbleId=addAssistantBubble();
   currentChatId=currentChatId||genId();
   const timestamp=Date.now();
-  currentMessages.push({role:'user',parts:[{text:query},...pendingImages.map(img=>({inlineData:{mimeType:img.mimeType,data:img.data}}))],timestamp});
+  
+  // Build message parts with text, images, and files
+  const parts=[{text:query}];
+  
+  // Add images
+  pendingImages.forEach(img=>{
+    parts.push({inlineData:{mimeType:img.mimeType,data:img.data}});
+  });
+  
+  // Add files as text content
+  pendingFiles.forEach(file=>{
+    parts.push({text:`\n\n--- File: ${file.name} (${file.type}) ---\n${file.content}\n--- End of ${file.name} ---\n`});
+  });
+  
+  currentMessages.push({role:'user',parts,timestamp});
   currentMessages.push({role:'assistant',parts:[{text:''}],timestamp});
   try{
-    // Use known working free models
+    // Use verified working free models
     let res=await fetch('https://openrouter.ai/api/v1/chat/completions',{
       method:'POST',headers:{'Content-Type':'application/json','Authorization':`Bearer ${aiKey}`,'HTTP-Referer':location.origin,'X-Title':'WonderStart'},
       body:JSON.stringify({
-        model:'meta-llama/llama-3.2-3b-instruct:free',
+        model:'meta-llama/llama-3.2-3b-instruct',
         messages:currentMessages.map(m=>({role:m.role,content:m.parts.map(p=>p.text||`[Image: ${p.inlineData?.mimeType||'image'}]`).join('\n')})),
         stream:true,
         max_tokens:4000,
@@ -863,12 +879,12 @@ async function sendToAI(query){
       })
     });
     
-    // Fallback to another free model
+    // Fallback to another working model
     if(!res.ok){
       res=await fetch('https://openrouter.ai/api/v1/chat/completions',{
         method:'POST',headers:{'Content-Type':'application/json','Authorization':`Bearer ${aiKey}`,'HTTP-Referer':location.origin,'X-Title':'WonderStart'},
         body:JSON.stringify({
-          model:'microsoft/phi-3-mini-128k-instruct:free',
+          model:'microsoft/phi-3-mini-128k-instruct',
           messages:currentMessages.map(m=>({role:m.role,content:m.parts.map(p=>p.text||`[Image: ${p.inlineData?.mimeType||'image'}]`).join('\n')})),
           stream:true,
           max_tokens:4000,
@@ -879,6 +895,7 @@ async function sendToAI(query){
     
     if(!res.ok){
       const errorText=await res.text();
+      console.error('API Error Response:', errorText);
       if(res.status===402){
         throw new Error('API requires payment. Please add credits to your OpenRouter account.');
       }
@@ -925,6 +942,7 @@ async function sendToAI(query){
   }finally{
     streaming=false;
     pendingImages=[];
+    pendingFiles=[];
     renderAttachPreview();
   }
 }
@@ -957,22 +975,76 @@ async function sendToSearch(query){
   }
 }
 
+function triggerFile(){
+  document.getElementById('file-input').click();
+}
+
+async function handleFiles(files){
+  for(const file of files){
+    if(file.type.startsWith('image/')){
+      // Handle image files
+      const reader=new FileReader();
+      reader.onload=e=>{
+        pendingImages.push({
+          base64:e.target.result.split(',')[1],
+          mimeType:file.type,
+          previewUrl:e.target.result,
+          name:file.name
+        });
+        renderAttachPreview();
+      };
+      reader.readAsDataURL(file);
+    } else {
+      // Handle text files
+      const reader=new FileReader();
+      reader.onload=e=>{
+        pendingFiles.push({
+          name:file.name,
+          content:e.target.result,
+          type:file.type || 'text/plain'
+        });
+        renderAttachPreview();
+      };
+      reader.readAsText(file);
+    }
+  }
+}
+
 function renderAttachPreview(){
   const preview=document.getElementById('attach-preview');
-  if(!pendingImages.length){
-    preview.innerHTML='';
-    return;
+  let html='';
+  
+  // Render images
+  if(pendingImages.length){
+    html+=pendingImages.map((img,i)=>`
+      <div class="ap-item">
+        <img src="${img.previewUrl}" alt="">
+        <button class="ap-rm" onclick="removePendingImage(${i})">×</button>
+      </div>
+    `).join('');
   }
-  preview.innerHTML=pendingImages.map((img,i)=>`
-    <div class="ap-item">
-      <img src="${img.previewUrl}" alt="">
-      <button class="ap-rm" onclick="removePendingImage(${i})">×</button>
-    </div>
-  `).join('');
+  
+  // Render files
+  if(pendingFiles.length){
+    html+=pendingFiles.map((file,i)=>`
+      <div class="ap-file">
+        <div style="font-size:20px">📄</div>
+        <div class="ap-file-name">${file.name}</div>
+        <button class="ap-rm" onclick="removePendingFile(${i})">×</button>
+      </div>
+    `).join('');
+  }
+  
+  preview.innerHTML=html;
 }
 
 function removePendingImage(i){
   pendingImages.splice(i,1);
+  renderAttachPreview();
+}
+
+function removePendingFile(i){
+  pendingFiles.splice(i,1);
   renderAttachPreview();
 }
 
