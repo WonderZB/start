@@ -206,15 +206,33 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'DM San
   <div class="panel">
     <div id="s1">
       <div class="step-tag">Step 1 of 3 — AI engine</div>
-      <h2>OpenRouter API key</h2>
-      <p class="sub">Free access to Qwen3, Llama 4 and more. No credit card needed.</p>
-      <div class="instructions"><ol>
-        <li>Go to <a href="https://openrouter.ai/keys" target="_blank">openrouter.ai/keys</a></li>
-        <li>Sign up free (no credit card) → click <strong style="color:var(--text)">Create Key</strong></li>
-        <li>Copy the key (starts with <code>sk-or-</code>) and paste below</li>
-      </ol></div>
-      <label class="fl">OpenRouter API key</label>
+      <h2>Choose AI Provider</h2>
+      <p class="sub">Grok offers $25 free credits. Optional data sharing may provide extra credits. OpenRouter has free models.</p>
+      
+      <div class="instructions">
+        <div style="margin-bottom:1rem"><strong>🚀 GROK (RECOMMENDED)</strong></div>
+        <ol>
+          <li>Go to <a href="https://console.x.ai" target="_blank">console.x.ai</a></li>
+          <li>Sign up with email or X account (no credit card)</li>
+          <li>Generate API key (starts with "xai-")</li>
+          <li>Optional: Check Settings for data sharing program for extra credits</li>
+          <li>Copy key below</li>
+        </ol>
+      </div>
+      <label class="fl">Grok API Key</label>
+      <input class="fi" type="password" id="grok-key-input" placeholder="xai-...">
+      
+      <div class="instructions" style="margin-top:1.5rem">
+        <div style="margin-bottom:1rem"><strong>🔄 OPENROUTER (FALLBACK)</strong></div>
+        <ol>
+          <li>Go to <a href="https://openrouter.ai/keys" target="_blank">openrouter.ai/keys</a></li>
+          <li>Sign up free (no credit card) → click <strong>Create Key</strong></li>
+          <li>Copy the key (starts with <code>sk-or-</code>) and paste below</li>
+        </ol>
+      </div>
+      <label class="fl">OpenRouter API Key (optional)</label>
       <input class="fi" type="password" id="s1-key" placeholder="sk-or-v1-...">
+      
       <div class="er" id="s1-err"></div>
       <button class="bp" onclick="s1Next()">Continue →</button>
     </div>
@@ -367,7 +385,7 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'DM San
 <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore-compat.js"></script>
 
 <script>
-let mode='ai', aiKey='', braveKey='', fbConfigObj=null, lastModelUsed='', pendingPollinationsImgs={}, pendingPuterImgs={}, pendingImgLoads={};
+let mode='ai', aiKey='', braveKey='', grokKey='', fbConfigObj=null, lastModelUsed='', pendingPollinationsImgs={}, pendingPuterImgs={}, pendingImgLoads={};
 let streaming=false, currentChatId=null, currentMessages=[], allChats=[];
 let db=null, fbAuth=null, currentUser=null, fbReady=false;
 let pendingImages=[]; // [{base64, mimeType, previewUrl, name}]
@@ -377,9 +395,10 @@ let pendingFiles=[];   // [{name, content, type}]
 window.addEventListener('load',function boot(){
   aiKey=localStorage.getItem('ws_ai')||localStorage.getItem('ws_gemini')||'';
   braveKey=localStorage.getItem('ws_brave')||'';
+  grokKey=localStorage.getItem('ws_grok')||'';
   const fbStr=localStorage.getItem('ws_fb');
   if(fbStr){try{fbConfigObj=JSON.parse(fbStr);}catch{}}
-  if(!aiKey){showSetup(1);return;}
+  if(!aiKey&&!grokKey){showSetup(1);return;}
   initScrollListener();
   if(fbConfigObj){initFirebase();}else{loadLocal();showMain();}
 });
@@ -392,10 +411,34 @@ function showMain(){document.getElementById('setup-overlay').classList.add('hidd
 
 // ── SETUP ─────────────────────────────────────────────────
 function s1Next(){
-  const v=document.getElementById('s1-key').value.trim(),e=document.getElementById('s1-err');
-  if(!v||v.length<10){e.textContent='Please paste your full OpenRouter key.';return;}
-  localStorage.setItem('ws_ai',v);aiKey=v;e.textContent='';showSetup(2);
-  if(db&&currentUser)db.collection('users').doc(currentUser.uid).set({aiKey:v,updatedAt:Date.now()},{merge:true}).catch(()=>{});
+  const grokKeyValue=document.getElementById('grok-key-input').value.trim();
+  const openRouterKey=document.getElementById('s1-key').value.trim();
+  
+  if(!grokKeyValue&&!openRouterKey){
+    document.getElementById('s1-err').textContent='Please enter at least one API key (Grok recommended)';
+    return;
+  }
+  
+  if(grokKeyValue){
+    if(!grokKeyValue.startsWith('xai-')){
+      document.getElementById('s1-err').textContent='Grok key must start with "xai-"';
+      return;
+    }
+    grokKey=grokKeyValue;
+    localStorage.setItem('ws_grok',grokKey);
+  }
+  
+  if(openRouterKey){
+    if(!openRouterKey.startsWith('sk-or-')){
+      document.getElementById('s1-err').textContent='OpenRouter key must start with "sk-or-"';
+      return;
+    }
+    aiKey=openRouterKey;
+    localStorage.setItem('ws_ai',aiKey);
+  }
+  
+  document.getElementById('s1-err').textContent='';
+  showSetup(2);
 }
 function s2Next(){
   const v=document.getElementById('s2-brave').value.trim();
@@ -844,7 +887,9 @@ function submit(){
 }
 
 async function sendToAI(query){
-  if(!aiKey){alert('Please set up your OpenRouter API key in Settings.');return;}
+  // Check for API keys
+  if(!grokKey&&!aiKey){alert('Please set up your API key in Settings.');return;}
+  
   streaming=true;
   addUserBubble(query, pendingImages, pendingFiles);
   const bubbleId=addAssistantBubble();
@@ -866,76 +911,37 @@ async function sendToAI(query){
   
   currentMessages.push({role:'user',parts,timestamp});
   currentMessages.push({role:'assistant',parts:[{text:''}],timestamp});
+  
+  let success=false;
+  let lastError='';
+  
   try{
-    // Use verified working free models
-    let res=await fetch('https://openrouter.ai/api/v1/chat/completions',{
-      method:'POST',headers:{'Content-Type':'application/json','Authorization':`Bearer ${aiKey}`,'HTTP-Referer':location.origin,'X-Title':'WonderStart'},
-      body:JSON.stringify({
-        model:'meta-llama/llama-3.2-3b-instruct',
-        messages:currentMessages.map(m=>({role:m.role,content:m.parts.map(p=>p.text||`[Image: ${p.inlineData?.mimeType||'image'}]`).join('\n')})),
-        stream:true,
-        max_tokens:4000,
-        temperature:0.7
-      })
-    });
-    
-    // Fallback to another working model
-    if(!res.ok){
-      res=await fetch('https://openrouter.ai/api/v1/chat/completions',{
-        method:'POST',headers:{'Content-Type':'application/json','Authorization':`Bearer ${aiKey}`,'HTTP-Referer':location.origin,'X-Title':'WonderStart'},
-        body:JSON.stringify({
-          model:'microsoft/phi-3-mini-128k-instruct',
-          messages:currentMessages.map(m=>({role:m.role,content:m.parts.map(p=>p.text||`[Image: ${p.inlineData?.mimeType||'image'}]`).join('\n')})),
-          stream:true,
-          max_tokens:4000,
-          temperature:0.7
-        })
-      });
-    }
-    
-    if(!res.ok){
-      const errorText=await res.text();
-      console.error('API Error Response:', errorText);
-      if(res.status===402){
-        throw new Error('API requires payment. Please add credits to your OpenRouter account.');
-      }
-      throw new Error(`HTTP ${res.status}: ${res.statusText}`);
-    }
-    
-    const reader=res.body.getReader();
-    const decoder=new TextDecoder();
-    let fullText='';
-    let hasContent=false;
-    
-    while(true){
-      const{done,value}=await reader.read();
-      if(done)break;
-      const chunk=decoder.decode(value);
-      const lines=chunk.split('\n').filter(l=>l.startsWith('data: '));
-      for(const line of lines){
-        const data=line.slice(6);
-        if(data==='[DONE]')continue;
-        try{
-          const parsed=JSON.parse(data);
-          const content=parsed.choices?.[0]?.delta?.content||'';
-          if(content){
-            fullText+=content;
-            hasContent=true;
-            updateAssistantBubble(bubbleId,fullText,false);
-          }
-        }catch(e){
-          console.error('Parse error:', e, 'Data:', data);
-        }
+    // Try Grok first (preferred)
+    if(grokKey){
+      try{
+        await callGrokAPI(bubbleId, timestamp, query);
+        success=true;
+      }catch(e){
+        console.warn('Grok API failed:', e);
+        lastError=e.message;
       }
     }
     
-    if(!hasContent){
-      throw new Error('No content received from AI');
+    // Fallback to OpenRouter if Grok fails
+    if(!success && aiKey){
+      try{
+        await callOpenRouterAPI(bubbleId, timestamp, query);
+        success=true;
+      }catch(e){
+        console.warn('OpenRouter API failed:', e);
+        lastError=e.message;
+      }
     }
     
-    updateAssistantBubble(bubbleId,fullText,true,'LLaMA-3.2-3B');
-    currentMessages[currentMessages.length-1].parts[0].text=fullText;
-    await persistChat({id:currentChatId,title:generateChatTitle(query,fullText),updatedAt:timestamp,messages:currentMessages});
+    if(!success){
+      throw new Error(lastError || 'All AI providers failed');
+    }
+    
   }catch(e){
     console.error('AI Error:', e);
     updateAssistantBubble(bubbleId,'Error: '+e.message,true);
@@ -947,33 +953,226 @@ async function sendToAI(query){
   }
 }
 
-async function sendToSearch(query){
-  if(!braveKey){
-    addSearchBlock(query,null,null,`Search key not set. Using DuckDuckGo redirect.`);
-    setTimeout(()=>window.open(`https://duckduckgo.com/?q=${encodeURIComponent(query)}`,'_blank'),1000);
-    return;
+async function callGrokAPI(bubbleId, timestamp, query){
+  const res=await fetch('https://api.x.ai/v1/chat/completions',{
+    method:'POST',
+    headers:{
+      'Content-Type':'application/json',
+      'Authorization':`Bearer ${grokKey}`
+    },
+    body:JSON.stringify({
+      model:'grok-2-latest',  // Latest Grok model
+      messages:currentMessages.map(m=>({
+        role:m.role,
+        content:m.parts.map(p=>p.text||`[Image: ${p.inlineData?.mimeType||'image'}]`).join('\n')
+      })),
+      stream:true,
+      max_tokens:4000,
+      temperature:0.3
+    })
+  });
+  
+  if(!res.ok){
+    const errorText=await res.text();
+    if(res.status===402){
+      throw new Error('Grok credits exhausted. Please check console.x.ai for billing.');
+    }
+    throw new Error(`Grok HTTP ${res.status}: ${res.statusText}`);
   }
+  
+  await processStreamingResponse(res, bubbleId, timestamp, query, 'Grok-2');
+}
+
+async function callOpenRouterAPI(bubbleId, timestamp, query){
+  const res=await fetch('https://openrouter.ai/api/v1/chat/completions',{
+    method:'POST',
+    headers:{
+      'Content-Type':'application/json',
+      'Authorization':`Bearer ${aiKey}`,
+      'HTTP-Referer':location.origin,
+      'X-Title':'WonderStart'
+    },
+    body:JSON.stringify({
+      model:'meta-llama/llama-3.2-3b-instruct',
+      messages:currentMessages.map(m=>({
+        role:m.role,
+        content:m.parts.map(p=>p.text||`[Image: ${p.inlineData?.mimeType||'image'}]`).join('\n')
+      })),
+      stream:true,
+      max_tokens:4000,
+      temperature:0.7
+    })
+  });
+  
+  if(!res.ok){
+    const errorText=await res.text();
+    if(res.status===402){
+      throw new Error('OpenRouter credits exhausted. Please add credits to your account.');
+    }
+    throw new Error(`OpenRouter HTTP ${res.status}: ${res.statusText}`);
+  }
+  
+  await processStreamingResponse(res, bubbleId, timestamp, query, 'LLaMA-3.2-3B');
+}
+
+async function processStreamingResponse(res, bubbleId, timestamp, query, modelName){
+  const reader=res.body.getReader();
+  const decoder=new TextDecoder();
+  let fullText='';
+  let hasContent=false;
+  
+  while(true){
+    const{done,value}=await reader.read();
+    if(done)break;
+    const chunk=decoder.decode(value);
+    const lines=chunk.split('\n').filter(l=>l.startsWith('data: '));
+    for(const line of lines){
+      const data=line.slice(6);
+      if(data==='[DONE]')continue;
+      try{
+        const parsed=JSON.parse(data);
+        const content=parsed.choices?.[0]?.delta?.content||'';
+        if(content){
+          fullText+=content;
+          hasContent=true;
+          updateAssistantBubble(bubbleId,fullText,false);
+        }
+      }catch(e){
+        console.error('Parse error:', e, 'Data:', data);
+      }
+    }
+  }
+  
+  if(!hasContent){
+    throw new Error('No content received from AI');
+  }
+  
+  updateAssistantBubble(bubbleId,fullText,true,modelName);
+  currentMessages[currentMessages.length-1].parts[0].text=fullText;
+  await persistChat({id:currentChatId,title:generateChatTitle(query,fullText),updatedAt:timestamp,messages:currentMessages});
+}
+
+// ── GROK IMAGE GENERATION ─────────────────────────────────────
+async function generateGrokImage(prompt){
+  if(!grokKey){
+    throw new Error('Grok API key required for image generation');
+  }
+  
   try{
-    const res=await fetch('https://google.serper.dev/search',{
-      method:'POST',headers:{'X-API-KEY':braveKey,'Content-Type':'application/json'},
-      body:JSON.stringify({q:query,num:10})
+    const res=await fetch('https://api.x.ai/v1/images/generations',{
+      method:'POST',
+      headers:{
+        'Content-Type':'application/json',
+        'Authorization':`Bearer ${grokKey}`
+      },
+      body:JSON.stringify({
+        model:'grok-2-image',
+        prompt:prompt,
+        n:1,
+        size:'1024x1024',
+        response_format:'url'
+      })
     });
+    
+    if(!res.ok){
+      const errorText=await res.text();
+      if(res.status===402){
+        throw new Error('Grok image credits exhausted. Please check console.x.ai for billing.');
+      }
+      throw new Error(`Grok Image HTTP ${res.status}: ${res.statusText}`);
+    }
+    
     const data=await res.json();
-    const results=data.organic?.map(r=>({
-      title:r.title,url:r.link,description:r.snippet,thumbnail:r.imageUrl
-    }))||[];
-    const images=data.images?.slice(0,6).map(i=>({
-      src:i.imageUrl,title:i.title,url:i.link
-    }))||[];
-    addSearchBlock(query,results,images,null);
-    currentChatId=currentChatId||genId();
-    currentMessages.push({role:'user',parts:[{text:query}]});
-    currentMessages.push({role:'assistant',parts:[{text:`Search results for "${query}":\n\n${results.map(r=>`- [${r.title}](${r.url})\n${r.description}`).join('\n\n')}`}]});
-    await persistChat({id:currentChatId,title:query.slice(0,50),updatedAt:Date.now(),messages:currentMessages});
+    return data.data[0].url;
   }catch(e){
-    addSearchBlock(query,null,null,'Search failed: '+e.message);
+    console.error('Grok Image Error:', e);
+    throw e;
   }
 }
+
+// ── TEST GROK INTEGRATION ─────────────────────────────────────
+async function testGrokIntegration(){
+  console.log('🧪 Testing Grok Integration...');
+  
+  // Test 1: Check API keys
+  console.log('📋 API Keys Status:');
+  console.log('- Grok Key:', grokKey ? '✅ Set' : '❌ Not set');
+  console.log('- OpenRouter Key:', aiKey ? '✅ Set' : '❌ Not set');
+  
+  // Test 2: Test Grok API if available
+  if(grokKey){
+    try{
+      console.log('🚀 Testing Grok API...');
+      const testResponse = await fetch('https://api.x.ai/v1/chat/completions',{
+        method:'POST',
+        headers:{
+          'Content-Type':'application/json',
+          'Authorization':`Bearer ${grokKey}`
+        },
+        body:JSON.stringify({
+          model:'grok-2-latest',
+          messages:[{role:'user',content:'Say "Grok is working!"'}],
+          max_tokens:10,
+          stream:false
+        })
+      });
+      
+      if(testResponse.ok){
+        const data = await testResponse.json();
+        console.log('✅ Grok API Test Passed:', data.choices[0].message.content);
+      } else {
+        console.log('❌ Grok API Test Failed:', testResponse.status, testResponse.statusText);
+      }
+    } catch(e){
+      console.log('❌ Grok API Test Error:', e.message);
+    }
+  }
+  
+  // Test 3: Test OpenRouter fallback if available
+  if(aiKey){
+    try{
+      console.log('🔄 Testing OpenRouter Fallback...');
+      const testResponse = await fetch('https://openrouter.ai/api/v1/chat/completions',{
+        method:'POST',
+        headers:{
+          'Content-Type':'application/json',
+          'Authorization':`Bearer ${aiKey}`
+        },
+        body:JSON.stringify({
+          model:'meta-llama/llama-3.2-3b-instruct',
+          messages:[{role:'user',content:'Say "OpenRouter is working!"'}],
+          max_tokens:10,
+          stream:false
+        })
+      });
+      
+      if(testResponse.ok){
+        const data = await testResponse.json();
+        console.log('✅ OpenRouter Fallback Test Passed:', data.choices[0].message.content);
+      } else {
+        console.log('❌ OpenRouter Fallback Test Failed:', testResponse.status, testResponse.statusText);
+      }
+    } catch(e){
+      console.log('❌ OpenRouter Fallback Test Error:', e.message);
+    }
+  }
+  
+  // Test 4: Test image generation
+  if(grokKey){
+    try{
+      console.log('🎨 Testing Grok Image Generation...');
+      const imageUrl = await generateGrokImage('a simple red apple');
+      console.log('✅ Grok Image Generation Test Passed:', imageUrl);
+    } catch(e){
+      console.log('❌ Grok Image Generation Test Failed:', e.message);
+    }
+  }
+  
+  console.log('🏁 Test Complete! Check console for results.');
+}
+
+// Make test function available globally for debugging
+window.testGrokIntegration = testGrokIntegration;
 
 function triggerFile(){
   document.getElementById('file-input').click();
@@ -1052,23 +1251,48 @@ function mdLite(t){
   // Extract links/images before HTML-escaping so URLs survive
   const links=[], imgs=[];
   // Extract [IMG:description] tags from AI output
-  t=t.replace(/\[IMG:([^\]]+)\]/gi,(_,desc)=>{imgs.push({alt:desc,url:''});return'\x00IMG'+(imgs.length-1)+'\x00';});
+  t=t.replace(/\[IMG:([^\]]+)\]/gi,(_,desc)=>{
+    imgs.push({alt:desc,url:''});
+    return '\x00IMG'+(imgs.length-1)+'\x00';
+  });
+  
   // Also handle legacy ![alt](url) markdown images
   t=t.replace(/!\[([^\]]*)\]\(([^)]+)\)/g,(_,alt,url)=>{if(alt||url)imgs.push({alt:alt||url,url});return'\x00IMG'+(imgs.length-1)+'\x00';});
   t=t.replace(/\[([^\]]+)\]\(([^)]+)\)/g,(_,text,url)=>{links.push({text,url});return'\x00LNK'+(links.length-1)+'\x00';});
+  
   // HTML escape
   t=t.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  
   // Restore links and images
   t=t.replace(/\x00LNK(\d+)\x00/g,(_,i)=>`<a href="${links[i].url}" target="_blank" style="color:var(--accent);text-decoration:underline">${links[i].text}</a>`);
-  t=t.replace(/\x00IMG(\d+)\x00/g,(_,i)=>{
+  t=t.replace(/\x00IMG(\d+)\x00/g,(match,i)=>{
     const desc=imgs[i].alt||'abstract art';
     const cap=desc.length>70?desc.substring(0,70)+'\u2026':desc;
     const seed=Math.floor(Math.random()*99999);
     const pid='mi-'+seed+'-'+i;
-    pendingImgLoads=pendingImgLoads||{};
-    pendingImgLoads[pid]='https://image.pollinations.ai/prompt/'+encodeURIComponent(desc)+'?nologo=true&seed='+seed;
-    return `<div style="margin:.75rem 0"><div id="${pid}" style="background:var(--surface2);border-radius:12px;height:160px;display:flex;align-items:center;justify-content:center;font-size:.82rem;color:var(--muted)">Generating image…</div><div style="font-size:.72rem;color:var(--muted);margin-top:.35rem;font-family:IBM Plex Mono,monospace">${cap} · via pollinations.ai</div></div>`;
+    
+    // Try Grok image generation first, fallback to Pollinations
+    if(grokKey){
+      generateGrokImage(desc).then(imageUrl=>{
+        const el=document.getElementById(pid);
+        if(el){
+          el.innerHTML=`<img src="${imageUrl}" alt="${escH(desc)}" style="width:100%;height:100%;object-fit:cover;border-radius:12px">`;
+        }
+      }).catch(e=>{
+        console.warn('Grok image generation failed, falling back to Pollinations:', e);
+        // Fallback to Pollinations
+        pendingImgLoads=pendingImgLoads||{};
+        pendingImgLoads[pid]='https://image.pollinations.ai/prompt/'+encodeURIComponent(desc)+'?nologo=true&seed='+seed;
+      });
+    } else {
+      // Use Pollinations if no Grok key
+      pendingImgLoads=pendingImgLoads||{};
+      pendingImgLoads[pid]='https://image.pollinations.ai/prompt/'+encodeURIComponent(desc)+'?nologo=true&seed='+seed;
+    }
+    
+    return `<div style="margin:.75rem 0"><div id="${pid}" style="background:var(--surface2);border-radius:12px;height:160px;display:flex;align-items:center;justify-content:center;font-size:.82rem;color:var(--muted)">Generating image...</div><div style="font-size:.72rem;color:var(--muted);margin-top:.35rem;font-family:IBM Plex Mono,monospace">${cap}</div></div>`;
   });
+  
   // Rest of markdown
   return t
     .replace(/`([^`]+)`/g,'<code class="md-code">$1</code>')
