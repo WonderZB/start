@@ -14,7 +14,7 @@
   --text:#e8e4d8;--muted:#6b6d7d;--accent:#c9922a;--accent-dim:rgba(201,146,42,0.12);
   --red:#cf5c5c;--radius:10px;--sw:260px;--ib:80px;
 }
-html,body{height:100%;background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;font-size:15px;line-height:1.6;-webkit-font-smoothing:antialiased;-webkit-touch-callout:none;-webkit-user-select:none;user-select:none;touch-action:pan-y}
+html,body{height:100%;background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;font-size:15px;line-height:1.6;-webkit-font-smoothing:antialiased;-webkit-touch-callout:none;touch-action:pan-y}
 
 /* ── OVERLAYS ── */
 .overlay{position:fixed;inset:0;background:rgba(0,0,0,0.75);display:flex;align-items:center;justify-content:center;z-index:300;padding:1.5rem;overflow-y:auto}
@@ -49,7 +49,7 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'DM San
 #chat-list::-webkit-scrollbar{width:3px}
 #chat-list::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px}
 .gl{font-size:.67rem;font-family:‘IBM Plex Mono’,monospace;color:var(--muted);letter-spacing:.07em;text-transform:uppercase;padding:.5rem .5rem .2rem;margin-top:.35rem}
-.ci{display:flex;align-items:center;gap:5px;padding:.45rem .55rem;border-radius:7px;cursor:pointer;transition:background .12s}
+.ci{display:flex;align-items:center;gap:5px;padding:.6rem .7rem;border-radius:7px;cursor:pointer;transition:background .12s;min-height:44px;-webkit-tap-highlight-color:transparent}
 .ci:hover{background:var(--surface2)}.ci.active{background:var(--accent-dim)}
 .ct{flex:1;font-size:.81rem;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
 .ci.active .ct{color:var(--accent)}
@@ -96,7 +96,7 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'DM San
 .msg{display:flex;gap:.75rem;max-width:640px;width:100%;margin:0 auto}
 .msg.user{justify-content:flex-end}
 .msg.assistant{justify-content:flex-start}
-.bubble{padding:.85rem 1.1rem;border-radius:14px;font-size:.93rem;line-height:1.72;max-width:82%;word-break:break-word}
+.bubble{padding:.85rem 1.1rem;border-radius:14px;font-size:.93rem;line-height:1.72;max-width:82%;word-break:break-word;position:relative;-webkit-user-select:text;user-select:text}
 .msg.user .bubble{background:var(--surface);border:1px solid var(--border);border-bottom-right-radius:4px;color:var(--text)}
 .msg.assistant .bubble{background:transparent;padding-left:0;padding-right:0;max-width:100%;color:var(--text)}
 .msg.assistant .bubble strong{color:var(--accent);font-weight:500}
@@ -105,6 +105,12 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'DM San
 .typing-dot span{width:6px;height:6px;border-radius:50%;background:var(--muted);animation:td .9s infinite}
 .typing-dot span:nth-child(2){animation-delay:.2s}.typing-dot span:nth-child(3){animation-delay:.4s}
 @keyframes td{0%,80%,100%{transform:scale(.7);opacity:.4}40%{transform:scale(1);opacity:1}}
+
+/* COPY BUTTON */
+.copy-btn{position:absolute;top:.5rem;right:.5rem;width:28px;height:28px;border-radius:6px;background:var(--surface2);border:1px solid var(--border);color:var(--muted);cursor:pointer;display:none;align-items:center;justify-content:center;opacity:0;transition:opacity .15s,background .15s,color .15s;font-size:12px;line-height:1}
+.msg:hover .copy-btn{display:flex;opacity:0.7}
+.copy-btn:hover{opacity:1;background:var(--surface);color:var(--text)}
+.copy-btn:active{transform:scale(0.95)}
 
 /* SEARCH RESULTS IN THREAD */
 .search-result-block{max-width:620px;width:100%;margin:0 auto}
@@ -512,13 +518,28 @@ async function clearHistory(period){
 }
 
 // ── SIDEBAR ───────────────────────────────────────────────
+function generateChatTitle(query, response){
+  // Simple title generation based on content
+  const topics=response.toLowerCase().match(/\b(car|engine|parts|cost|price|repair|maintenance|programming|code|software|computer|health|medical|food|recipe|cooking|travel|vacation|business|finance|money|investment|education|learning|study)\b/g);
+  if(topics && topics.length>0){
+    const mainTopic=topics[0];
+    return `${mainTopic.charAt(0).toUpperCase()+mainTopic.slice(1)} discussion`;
+  }
+  // Fallback to first few words of query
+  return query.slice(0,30)+(query.length>30?'...':'');
+}
+
 function renderSidebar(){
   const list=document.getElementById('chat-list');
   if(!allChats.length){list.innerHTML='<div class="es">No chats yet.<br>Ask something to start.</div>';return;}
+  
+  // Sort by last updated
+  allChats.sort((a,b)=>(b.updatedAt||0)-(a.updatedAt||0));
+  
   const d=ms=>new Date(new Date().setHours(0,0,0,0)-ms);
   const groups=[{l:'Today',c:[]},{l:'Yesterday',c:[]},{l:'Last 7 days',c:[]},{l:'Last 30 days',c:[]},{l:'Older',c:[]}];
   for(const chat of allChats){
-    const t=new Date(chat.updatedAt);
+    const t=new Date(chat.updatedAt||0);
     if(t>=d(0))groups[0].c.push(chat);
     else if(t>=d(86400000))groups[1].c.push(chat);
     else if(t>=d(7*86400000))groups[2].c.push(chat);
@@ -533,8 +554,11 @@ function renderSidebar(){
       const active=c.id===currentChatId?' active':'';
       const n=c.messages?Math.floor(c.messages.length/2):0;
       const turns=n>0?` <span style="color:var(--muted);font-size:.67rem">${n}</span>`:'';
+      const createdDate=c.updatedAt?new Date(c.updatedAt).toLocaleDateString():'';
+      const createdTime=c.updatedAt?new Date(c.updatedAt).toLocaleTimeString():'';
+      const timeInfo=createdDate!==new Date().toLocaleDateString()?createdDate:createdTime;
       html+=`<div class="ci${active}" onclick="loadChat('${c.id}')">
-        <span class="ct">${escH(c.title)}${turns}</span>
+        <span class="ct">${escH(c.title||'Untitled')}${turns}</span>
         <button class="cd" onclick="event.stopPropagation();deleteChat('${c.id}')">×</button>
       </div>`;
     }
@@ -578,10 +602,14 @@ function renderThread(){
       if(textPart&&textPart.text&&textPart.text!='[image]'){
         inner+=`<div>${escH(textPart.text)}</div>`;
       }
-      thread.innerHTML+=`<div class="msg user"><div class="bubble">${inner}</div></div>`;
+      const timestamp=msg.timestamp?new Date(msg.timestamp).toLocaleTimeString():'';
+      const timeHtml=timestamp?`<div style="font-size:.7rem;color:var(--muted);margin-top:.3rem;text-align:right">${timestamp}</div>`:'';
+      thread.innerHTML+=`<div class="msg user"><div class="bubble">${inner}${timeHtml}<button class="copy-btn" onclick="copyMessage(this)" title="Copy">📋</button></div></div>`;
     } else {
       const text=msg.parts[0]?.text||'';
-      thread.innerHTML+=`<div class="msg assistant"><div class="bubble">${mdLite(text)}</div></div>`;
+      const timestamp=msg.timestamp?new Date(msg.timestamp).toLocaleTimeString():'';
+      const timeHtml=timestamp?`<div style="font-size:.7rem;color:var(--muted);margin-top:.6rem">${timestamp}</div>`:'';
+      thread.innerHTML+=`<div class="msg assistant"><div class="bubble">${mdLite(text)}${timeHtml}<button class="copy-btn" onclick="copyMessage(this)" title="Copy">📋</button></div></div>`;
     }
   }
 }
@@ -592,8 +620,25 @@ function addUserBubble(text, images){
   let inner='';
   if(images&&images.length) inner+=images.map(img=>`<img class="msg-img" src="${img.previewUrl}" alt="">`).join('');
   if(text) inner+=`<div>${escH(text)}</div>`;
-  thread.innerHTML+=`<div class="msg user"><div class="bubble">${inner}</div></div>`;
+  const timestamp=new Date().toLocaleTimeString();
+  const timeHtml=`<div style="font-size:.7rem;color:var(--muted);margin-top:.3rem;text-align:right">${timestamp}</div>`;
+  thread.innerHTML+=`<div class="msg user"><div class="bubble">${inner}${timeHtml}<button class="copy-btn" onclick="copyMessage(this)" title="Copy">📋</button></div></div>`;
   scrollToNewMessage();
+}
+
+function copyMessage(btn){
+  const bubble=btn.closest('.bubble');
+  const text=bubble.cloneNode(true);
+  text.querySelector('.copy-btn')?.remove();
+  text.querySelectorAll('.timestamp').forEach(el=>el.remove());
+  const content=text.textContent||text.innerText;
+  navigator.clipboard.writeText(content).then(()=>{
+    const originalText=btn.textContent;
+    btn.textContent='✓';
+    setTimeout(()=>btn.textContent=originalText,1500);
+  }).catch(()=>{
+    document.execCommand('copy');
+  });
 }
 
 function addAssistantBubble(){
@@ -608,7 +653,8 @@ function updateAssistantBubble(id, text, done, modelLabel){
   const el=document.getElementById(id);
   if(!el)return;
   const label=done&&modelLabel?`<div style="margin-top:.75rem;padding-top:.6rem;border-top:1px solid var(--border);font-family:'IBM Plex Mono',monospace;font-size:.65rem;color:var(--muted)">via ${modelLabel}</div>`:'';
-  el.querySelector('.bubble').innerHTML=mdLite(text)+(done?label:'<span class="cursor-blink"></span>');
+  const timestamp=done?`<div style="font-size:.7rem;color:var(--muted);margin-top:.6rem">${new Date().toLocaleTimeString()}</div>`:'';
+  el.querySelector('.bubble').innerHTML=mdLite(text)+(done?label:'<span class="cursor-blink"></span>')+timestamp+(done?'<button class="copy-btn" onclick="copyMessage(this)" title="Copy">📋</button>':'');
   followScroll();
 }
 
@@ -697,7 +743,6 @@ function setMode(m){
   document.getElementById('btn-ai').classList.toggle('active',m==='ai');
   document.getElementById('btn-search').classList.toggle('active',m==='search');
   document.getElementById('query').placeholder=m==='ai'?'Ask anything…':'Search the web…';
-  document.getElementById('query').focus();
 }
 function autoResize(el){el.style.height='auto';el.style.height=Math.min(el.scrollHeight,180)+'px';}
 function handleKey(e){
@@ -767,8 +812,9 @@ async function sendToAI(query){
   addUserBubble(query, pendingImages);
   const bubbleId=addAssistantBubble();
   currentChatId=currentChatId||genId();
-  currentMessages.push({role:'user',parts:[{text:query},...pendingImages.map(img=>({inlineData:{mimeType:img.mimeType,data:img.data}}))]});
-  currentMessages.push({role:'assistant',parts:[{text:''}]});
+  const timestamp=Date.now();
+  currentMessages.push({role:'user',parts:[{text:query},...pendingImages.map(img=>({inlineData:{mimeType:img.mimeType,data:img.data}}))],timestamp});
+  currentMessages.push({role:'assistant',parts:[{text:''}],timestamp});
   try{
     const res=await fetch('https://openrouter.ai/api/v1/chat/completions',{
       method:'POST',headers:{'Content-Type':'application/json','Authorization':`Bearer ${aiKey}`,'HTTP-Referer':location.origin,'X-Title':'WonderStart'},
@@ -797,7 +843,7 @@ async function sendToAI(query){
     }
     updateAssistantBubble(bubbleId,fullText,true,'qwen-2.5-7b');
     currentMessages[currentMessages.length-1].parts[0].text=fullText;
-    await persistChat({id:currentChatId,title:query.slice(0,50),updatedAt:Date.now(),messages:currentMessages});
+    await persistChat({id:currentChatId,title:generateChatTitle(query,fullText),updatedAt:timestamp,messages:currentMessages});
   }catch(e){
     updateAssistantBubble(bubbleId,'Error: '+e.message,true);
   }finally{
