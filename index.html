@@ -1063,7 +1063,7 @@ async function callPuterAI(bubbleId, timestamp, query){
     // Handle streaming response
     await processStreamingResponse(response, bubbleId, timestamp, query, 'Grok-2 (Puter Free)');
     
-  }catch(e){
+  } catch (e) {
     console.error('💥 Puter AI Exception:', e);
     throw new Error(`Puter AI Error: ${e.message}`);
   }
@@ -1134,8 +1134,8 @@ async function callOpenRouterAPI(bubbleId, timestamp, query){
   await processStreamingResponse(res, bubbleId, timestamp, query, 'LLaMA-3.2-3B');
 }
 
-async function processStreamingResponse(res, bubbleId, timestamp, query, modelName){
-  const reader=res.body.getReader();
+async function processStreamingResponse(response, bubbleId, timestamp, query, modelName){
+  const reader=response.body.getReader();
   const decoder=new TextDecoder();
   let fullText='';
   let hasContent=false;
