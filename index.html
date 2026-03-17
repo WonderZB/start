@@ -283,8 +283,8 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'DM San
     <input class="fi" type="password" id="cfg-grok" placeholder="xai-...">
     <label class="fl">OpenRouter API key (fallback)</label>
     <input class="fi" type="password" id="cfg-gemini" placeholder="sk-or-v1-...">
-    <label class="fl">Google AI Studio API key (AI mode - FREE)</label>
-    <input class="fi" type="password" id="cfg-google-ai" placeholder="AIza...">
+    <label class="fl">OpenRouter Reasoning API key (AI mode - FREE thinking)</label>
+    <input class="fi" type="password" id="cfg-openrouter" placeholder="sk-or-v1-...">
     <label class="fl">Brave Search API key (Search mode - $5 free/month)</label>
     <input class="fi" type="password" id="cfg-brave-search" placeholder="paste Brave Search key here">
     <label class="fl">Serper.dev search key (legacy)</label>
@@ -401,12 +401,12 @@ let pendingFiles=[];   // [{name, content, type}]
 class FreeAIManager {
   constructor() {
     this.providers = {
-      google_ai: new GoogleAIProvider(),
+      openrouter_reasoning: new OpenRouterReasoningProvider(),
       openrouter: new OpenRouterProvider()
     };
-    this.currentProvider = 'google_ai';
+    this.currentProvider = 'openrouter_reasoning';
     this.usage = {
-      google_ai: { unlimited: true },
+      openrouter_reasoning: { free: true },
       openrouter: { free: true }
     };
   }
@@ -416,32 +416,32 @@ class FreeAIManager {
     console.log('- Query:', message);
     console.log('- Options:', options);
     
-    // AI mode: Use Google AI Studio (best free option)
+    // AI mode: Use OpenRouter Reasoning (best free thinking AI)
     if (options.needsReasoning) {
-      console.log('🧠 Using Google AI Studio for reasoning...');
-      return await this.providers.google_ai.chat(message, options);
+      console.log('🧠 Using OpenRouter Reasoning for deep thinking...');
+      return await this.providers.openrouter_reasoning.chat(message, options);
     } else if (options.needsImages) {
-      console.log('🎨 Using Google AI Studio for images...');
-      return await this.providers.google_ai.chat(message, options);
+      console.log('🎨 Using OpenRouter Reasoning for images...');
+      return await this.providers.openrouter_reasoning.chat(message, options);
     } else {
-      console.log('💬 Using Google AI Studio for general AI chat...');
-      return await this.providers.google_ai.chat(message, options);
+      console.log('💬 Using OpenRouter Reasoning for general AI chat...');
+      return await this.providers.openrouter_reasoning.chat(message, options);
     }
   }
   
   async generateImage(prompt) {
     console.log('🎨 Generating image:', prompt);
     try {
-      return await this.providers.google_ai.generateImage(prompt);
+      return await this.providers.openrouter_reasoning.generateImage(prompt);
     } catch (e) {
-      console.warn('⚠️ Google AI image generation failed:', e);
+      console.warn('⚠️ OpenRouter image generation failed:', e);
       throw new Error('Image generation not available');
     }
   }
   
   async researchPoland(query) {
     console.log('🇵🇱 Researching Poland with AI:', query);
-    return await this.providers.google_ai.chat(query, {
+    return await this.providers.openrouter_reasoning.chat(query, {
       needsReasoning: true,
       location: 'Poland',
       domain_filter: ['.pl', 'polsat.pl', 'tvn.pl', 'wp.pl', 'allegro.pl', 'olx.pl'],
@@ -526,75 +526,117 @@ class DuckDuckGoSearchProvider {
   }
 }
 
-// ── GOOGLE AI STUDIO PROVIDER (BEST FREE AI) ───────────────
-class GoogleAIProvider {
+// ── OPENROUTER REASONING PROVIDER (BEST FREE THINKING AI) ────
+class OpenRouterReasoningProvider {
   constructor() {
-    this.baseUrl = 'https://generativelanguage.googleapis.com/v1beta';
-    this.apiKey = null; // User needs to provide this
+    this.baseUrl = 'https://openrouter.ai/api/v1/chat/completions';
+    this.apiKey = null;
   }
   
   async chat(message, options = {}) {
-    const apiKey = this.apiKey || localStorage.getItem('ws_google_ai') || '';
+    const apiKey = this.apiKey || localStorage.getItem('ws_openrouter') || '';
     if (!apiKey) {
-      throw new Error('Google AI Studio API key required. Get your free key at: https://aistudio.google.com/app/apikey');
+      throw new Error('OpenRouter API key required for thinking AI. Get your free key at: https://openrouter.ai/keys');
     }
     
     try {
-      console.log('� Calling Google AI Studio API...');
-      console.log('- Model: gemini-2.5-flash');
+      console.log('🧠 Calling OpenRouter Reasoning API...');
+      
+      // Use the best free reasoning model
+      const model = options.needsReasoning ? 
+        'openai/gpt-oss-120b:free' : // 117B parameters, full chain-of-thought
+        'liquid/lfm-2.5-1.2b-thinking:free'; // Dedicated thinking model
+      
+      console.log('- Model:', model);
       console.log('- Messages:', message);
       
-      const response = await fetch(`${this.baseUrl}/models/gemini-2.5-flash:generateContent?key=${apiKey}`, {
+      const response = await fetch(this.baseUrl, {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json'
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${apiKey}`,
+          'HTTP-Referer': location.origin,
+          'X-Title': 'WonderStart'
         },
         body: JSON.stringify({
-          contents: [{
-            parts: [{ text: message }]
-          }],
-          generationConfig: {
-            temperature: options.needsReasoning ? 0.1 : 0.3,
-            maxOutputTokens: 4000,
-            candidateCount: 1
-          }
+          model: model,
+          messages: [{ role: 'user', content: message }],
+          stream: false,
+          max_tokens: 4000,
+          temperature: options.needsReasoning ? 0.1 : 0.3
         })
       });
       
       if (!response.ok) {
         const errorText = await response.text();
-        console.error('❌ Google AI Error Response:', errorText);
-        throw new Error(`Google AI HTTP ${response.status}: ${response.statusText}`);
+        console.error('❌ OpenRouter Error Response:', errorText);
+        throw new Error(`OpenRouter HTTP ${response.status}: ${response.statusText}`);
       }
       
       const data = await response.json();
-      console.log('✅ Google AI Success!');
-      console.log('Response:', data);
+      console.log('✅ OpenRouter Reasoning Success!');
       
-      const content = data.candidates?.[0]?.content?.parts?.[0]?.text || 'No response received';
+      const content = data.choices?.[0]?.message?.content || 'No response received';
       
       return {
         content: content,
         sources: [],
-        model: 'Gemini 2.5 Flash (Google AI Studio)',
-        reasoning: options.needsReasoning ? 'Gemini reasoning applied' : null,
-        provider: 'google_ai'
+        model: model,
+        reasoning: options.needsReasoning ? content : null,
+        provider: 'openrouter_reasoning'
       };
       
     } catch (e) {
-      console.error('💥 Google AI Error:', e);
-      throw new Error(`Google AI Error: ${e.message}`);
+      console.error('💥 OpenRouter Reasoning Error:', e);
+      throw new Error(`OpenRouter Reasoning Error: ${e.message}`);
     }
   }
   
   async generateImage(prompt) {
-    // Gemini doesn't support image generation directly
-    // Use a placeholder service
-    return {
-      url: `https://picsum.photos/seed/${encodeURIComponent(prompt)}/1024/1024.jpg`,
-      model: 'Placeholder Image Generation',
-      provider: 'google_ai'
-    };
+    // Use Pixazo Flux Schnell for free image generation
+    return await this.generatePixazoImage(prompt);
+  }
+  
+  async generatePixazoImage(prompt) {
+    try {
+      console.log('🎨 Generating image with Pixazo Flux Schnell:', prompt);
+      
+      const response = await fetch('https://api.pixazo.ai/v1/generate', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          prompt: prompt,
+          model: 'flux-schnell',
+          width: 1024,
+          height: 1024,
+          num_outputs: 1
+        })
+      });
+      
+      if (!response.ok) {
+        throw new Error(`Pixazo HTTP ${response.status}: ${response.statusText}`);
+      }
+      
+      const data = await response.json();
+      console.log('✅ Pixazo Image Success!');
+      
+      return {
+        url: data.images?.[0]?.url || `https://picsum.photos/seed/${encodeURIComponent(prompt)}/1024/1024.jpg`,
+        model: 'Flux Schnell (Pixazo Free)',
+        provider: 'pixazo'
+      };
+      
+    } catch (e) {
+      console.error('💥 Pixazo Image Error:', e);
+      // Fallback to placeholder
+      return {
+        url: `https://picsum.photos/seed/${encodeURIComponent(prompt)}/1024/1024.jpg`,
+        model: 'Placeholder Image',
+        provider: 'fallback'
+      };
+    }
   }
 }
 
@@ -602,11 +644,20 @@ class GoogleAIProvider {
 class BraveSearchProvider {
   constructor() {
     this.baseUrl = 'https://api.search.brave.com/res/v1/web/search';
-    this.apiKey = null; // User needs to provide this
+    this.apiKey = null;
   }
   
   async search(query, options = {}) {
-    const apiKey = this.apiKey || localStorage.getItem('ws_brave_search') || '';
+    // Check multiple sources for the API key
+    const apiKey = this.apiKey || 
+                   localStorage.getItem('ws_brave_search') || 
+                   document.getElementById('cfg-brave-search')?.value || '';
+    
+    console.log('🔍 Brave Search API Check:');
+    console.log('- this.apiKey:', !!this.apiKey);
+    console.log('- localStorage ws_brave_search:', !!localStorage.getItem('ws_brave_search'));
+    console.log('- Final apiKey:', !!apiKey);
+    
     if (!apiKey) {
       // Fallback to DuckDuckGo if no Brave API key
       console.log('⚠️ No Brave Search API key, falling back to DuckDuckGo');
@@ -614,7 +665,8 @@ class BraveSearchProvider {
     }
     
     try {
-      console.log('� Brave Search API:', query);
+      console.log('🔍 Brave Search API:', query);
+      console.log('- Using API key:', apiKey.substring(0, 10) + '...');
       
       const params = new URLSearchParams({
         q: query,
@@ -638,12 +690,18 @@ class BraveSearchProvider {
         }
       });
       
+      console.log('📊 Brave Response Status:', response.status);
+      console.log('📊 Brave Response OK:', response.ok);
+      
       if (!response.ok) {
+        const errorText = await response.text();
+        console.error('❌ Brave Search Error Response:', errorText);
         throw new Error(`Brave Search HTTP ${response.status}: ${response.statusText}`);
       }
       
       const data = await response.json();
       console.log('✅ Brave Search Success!');
+      console.log('Results count:', data.web?.results?.length || 0);
       
       return {
         results: this.formatBraveResults(data),
@@ -655,6 +713,7 @@ class BraveSearchProvider {
       
     } catch (e) {
       console.error('💥 Brave Search Error:', e);
+      console.log('🔄 Falling back to DuckDuckGo due to error');
       // Fallback to DuckDuckGo
       return await this.fallbackToDuckDuckGo(query, options);
     }
@@ -674,6 +733,7 @@ class BraveSearchProvider {
       });
     }
     
+    console.log('🔍 Formatted Brave Results:', results.length, 'items');
     return results;
   }
   
@@ -1253,8 +1313,8 @@ function openSettings(){
   document.getElementById('cfg-grok').value=grokKey;
   document.getElementById('cfg-gemini').value=aiKey;
   document.getElementById('cfg-brave').value=braveKey;
-  // Add new API key fields
-  document.getElementById('cfg-google-ai').value=localStorage.getItem('ws_google_ai')||'';
+  // Update API key fields
+  document.getElementById('cfg-openrouter').value=localStorage.getItem('ws_openrouter')||'';
   document.getElementById('cfg-brave-search').value=localStorage.getItem('ws_brave_search')||'';
   document.getElementById('cfg-fb').value=fbConfigObj?JSON.stringify(fbConfigObj):'';
   document.getElementById('cfg-err').textContent='';
@@ -1265,7 +1325,7 @@ function saveSettings(){
   const gk=document.getElementById('cfg-grok').value.trim();
   const ork=document.getElementById('cfg-gemini').value.trim();
   const bk=document.getElementById('cfg-brave').value.trim();
-  const ga=document.getElementById('cfg-google-ai').value.trim();
+  const or=document.getElementById('cfg-openrouter').value.trim();
   const bs=document.getElementById('cfg-brave-search').value.trim();
   const fb=document.getElementById('cfg-fb').value.trim();
   const e=document.getElementById('cfg-err');
@@ -1295,16 +1355,16 @@ function saveSettings(){
     braveKey='';
   }
   
-  if(ga){
-    if(!ga.startsWith('AIza')){e.textContent='Google AI key must start with "AIza"';return;}
-    localStorage.setItem('ws_google_ai',ga);
-    if(freeAIManager && freeAIManager.providers.google_ai){
-      freeAIManager.providers.google_ai.apiKey=ga;
+  if(or){
+    if(!or.startsWith('sk-or-')){e.textContent='OpenRouter key must start with "sk-or-"';return;}
+    localStorage.setItem('ws_openrouter',or);
+    if(freeAIManager && freeAIManager.providers.openrouter_reasoning){
+      freeAIManager.providers.openrouter_reasoning.apiKey=or;
     }
   } else {
-    localStorage.setItem('ws_google_ai','');
-    if(freeAIManager && freeAIManager.providers.google_ai){
-      freeAIManager.providers.google_ai.apiKey=null;
+    localStorage.setItem('ws_openrouter','');
+    if(freeAIManager && freeAIManager.providers.openrouter_reasoning){
+      freeAIManager.providers.openrouter_reasoning.apiKey=null;
     }
   }
   
@@ -1339,12 +1399,12 @@ window.addEventListener('load',function boot(){
   if(fbStr){try{fbConfigObj=JSON.parse(fbStr);}catch{}}
   
   // Load new API keys
-  const googleAIKey=localStorage.getItem('ws_google_ai')||'';
+  const openrouterKey=localStorage.getItem('ws_openrouter')||'';
   const braveSearchKey=localStorage.getItem('ws_brave_search')||'';
   
   // Set API keys to providers
-  if(freeAIManager && freeAIManager.providers.google_ai){
-    freeAIManager.providers.google_ai.apiKey=googleAIKey;
+  if(freeAIManager && freeAIManager.providers.openrouter_reasoning){
+    freeAIManager.providers.openrouter_reasoning.apiKey=openrouterKey;
   }
   if(searchProvider){
     searchProvider.apiKey=braveSearchKey;
@@ -1352,11 +1412,11 @@ window.addEventListener('load',function boot(){
   
   // Debug what's available
   console.log('🔍 Boot Check - Free AI Manager:', !!freeAIManager);
-  console.log('🔍 Boot Check - Google AI Provider:', !!freeAIManager?.providers?.google_ai);
+  console.log('🔍 Boot Check - OpenRouter Reasoning Provider:', !!freeAIManager?.providers?.openrouter_reasoning);
   console.log('🔍 Boot Check - Brave Search Provider:', !!searchProvider);
-  console.log('🔍 Boot Check - Google AI Key:', !!googleAIKey);
+  console.log('🔍 Boot Check - OpenRouter Reasoning Key:', !!openrouterKey);
   console.log('🔍 Boot Check - Brave Search Key:', !!braveSearchKey);
-  console.log('🔍 Boot Check - OpenRouter Key:', !!aiKey);
+  console.log('🔍 Boot Check - OpenRouter Fallback Key:', !!aiKey);
   
   // Free AI system should always be available
   console.log('✅ Proceeding with Free AI System');
@@ -1454,7 +1514,7 @@ async function sendToSearch(query){
   const timestamp=Date.now();
   
   try{
-    // Search mode: Use DuckDuckGo for search results
+    // Search mode: Try Brave Search for embedded results first
     const options = {
       location: query.toLowerCase().includes('poland') ? 'Poland' : null,
       domain_filter: query.toLowerCase().includes('poland') ? 
@@ -1463,58 +1523,69 @@ async function sendToSearch(query){
     
     console.log('🎯 Search Mode Options:', options);
     
-    // Use the search provider
+    // Try Brave Search for embedded results
     const searchResults = await searchProvider.search(query, options);
     
     console.log('✅ Search Results:', searchResults);
     
-    // Format search results for display with clickable links
-    let content = `**Search Results for:** ${query}\n\n`;
-    
-    // Add instant answer if available
-    if (searchResults.instantAnswer) {
-      content += `**Instant Answer:**\n${searchResults.instantAnswer}\n\n`;
-      if (searchResults.instantAnswerSource) {
-        content += `**Source:** [${searchResults.instantAnswerSource}](${searchResults.instantAnswerSource})\n\n`;
+    // Check if we got Brave Search results (embedded) or DuckDuckGo fallback
+    if (searchResults.provider === 'brave_search') {
+      // Show embedded Brave Search results
+      let content = `**Search Results for:** ${query}\n\n`;
+      
+      if (searchResults.results && searchResults.results.length > 0) {
+        content += `**Top Results:**\n`;
+        searchResults.results.forEach((result, index) => {
+          content += `\n${index + 1}. **[${result.title}](${result.url})**\n`;
+          content += `   ${result.snippet}\n`;
+          content += `   *Source: ${result.source}*\n`;
+        });
+      } else {
+        content += 'No specific results found. Try different keywords.';
       }
-    }
-    
-    // Add search results with clickable links
-    if (searchResults.results && searchResults.results.length > 0) {
-      content += `**Top Results:**\n`;
-      searchResults.results.forEach((result, index) => {
-        content += `\n${index + 1}. **[${result.title}](${result.url})**\n`;
-        content += `   ${result.snippet}\n`;
-        content += `   *Source: ${result.source}*\n`;
-      });
-    } else {
-      content += 'No specific results found. Try different keywords.';
-    }
-    
-    // Add option to open in new tab
-    const searchEngine = searchResults.provider === 'brave_search' ? 'Brave Search' : 'DuckDuckGo';
-    const searchUrl = searchResults.provider === 'brave_search' ? 
-      `https://search.brave.com/search?q=${encodeURIComponent(query)}` : 
-      `https://duckduckgo.com/?q=${encodeURIComponent(query)}`;
-    
-    content += `\n\n---\n\n[🔍 Open full search in ${searchEngine}](${searchUrl})`;
-    
-    updateAssistantBubble(bubbleId, content, true, `${searchResults.provider === 'brave_search' ? 'Brave Search' : 'DuckDuckGo Search'}`);
-    
-    // Add click handler for the search link
-    setTimeout(() => {
-      const bubble = document.querySelector(`[data-bubble-id="${bubbleId}"]`);
-      if (bubble) {
-        // Make all result links open in new tabs
-        const allLinks = bubble.querySelectorAll('a[href^="http"]');
-        allLinks.forEach(link => {
-          if (!link.href.includes('javascript:')) {
+      
+      // Add option to open in new tab
+      content += `\n\n---\n\n[🔍 Open full search in Brave Search](https://search.brave.com/search?q=${encodeURIComponent(query)})`;
+      
+      updateAssistantBubble(bubbleId, content, true, 'Brave Search');
+      
+      // Add click handler for links
+      setTimeout(() => {
+        const bubble = document.querySelector(`[data-bubble-id="${bubbleId}"]`);
+        if (bubble) {
+          const allLinks = bubble.querySelectorAll('a[href^="http"]');
+          allLinks.forEach(link => {
             link.target = '_blank';
             link.rel = 'noopener noreferrer';
+          });
+        }
+      }, 100);
+      
+    } else {
+      // DuckDuckGo fallback - open in new tab instead of embedding
+      console.log('🔄 DuckDuckGo fallback - opening in new tab');
+      
+      let content = `**Search for:** ${query}\n\n`;
+      content += `🔍 **Opening search in DuckDuckGo...**\n\n`;
+      content += `[🔍 Click here if not redirected](https://duckduckgo.com/?q=${encodeURIComponent(query)})`;
+      
+      updateAssistantBubble(bubbleId, content, true, 'DuckDuckGo Search');
+      
+      // Open DuckDuckGo search in new tab (simple search, not chatbot)
+      setTimeout(() => {
+        const searchUrl = `https://duckduckgo.com/?q=${encodeURIComponent(query)}&ia=web`; // Simple web search
+        window.open(searchUrl, '_blank');
+        
+        // Update the bubble to show it's been opened
+        const bubble = document.querySelector(`[data-bubble-id="${bubbleId}"]`);
+        if (bubble) {
+          const contentDiv = bubble.querySelector('.content');
+          if (contentDiv) {
+            contentDiv.innerHTML += `\n\n✅ **Search opened in new tab**`;
           }
-        });
-      }
-    }, 100);
+        }
+      }, 1000);
+    }
     
   }catch(e){
     console.error('💥 Search Error:', e);
