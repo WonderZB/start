@@ -1270,28 +1270,64 @@ function saveSettings(){
   const fb=document.getElementById('cfg-fb').value.trim();
   const e=document.getElementById('cfg-err');
   e.textContent='';
+  
+  // Save keys even if empty (to clear them)
   if(gk){
     if(!gk.startsWith('xai-')){e.textContent='Grok key must start with "xai-"';return;}
     grokKey=gk;localStorage.setItem('ws_grok',gk);
+  } else {
+    localStorage.setItem('ws_grok','');
+    grokKey='';
   }
+  
   if(ork){
     if(!ork.startsWith('sk-or-')){e.textContent='OpenRouter key must start with "sk-or-"';return;}
     aiKey=ork;localStorage.setItem('ws_ai',ork);
+  } else {
+    localStorage.setItem('ws_ai','');
+    aiKey='';
   }
-  if(bk){braveKey=bk;localStorage.setItem('ws_brave',bk);if(db&&currentUser)db.collection('users').doc(currentUser.uid).set({braveKey:bk,updatedAt:Date.now()},{merge:true}).catch(()=>{});}
+  
+  if(bk){
+    braveKey=bk;localStorage.setItem('ws_brave',bk);if(db&&currentUser)db.collection('users').doc(currentUser.uid).set({braveKey:bk,updatedAt:Date.now()},{merge:true}).catch(()=>{});
+  } else {
+    localStorage.setItem('ws_brave','');
+    braveKey='';
+  }
+  
   if(ga){
     if(!ga.startsWith('AIza')){e.textContent='Google AI key must start with "AIza"';return;}
     localStorage.setItem('ws_google_ai',ga);
-    freeAIManager.providers.google_ai.apiKey=ga;
+    if(freeAIManager && freeAIManager.providers.google_ai){
+      freeAIManager.providers.google_ai.apiKey=ga;
+    }
+  } else {
+    localStorage.setItem('ws_google_ai','');
+    if(freeAIManager && freeAIManager.providers.google_ai){
+      freeAIManager.providers.google_ai.apiKey=null;
+    }
   }
+  
   if(bs){
     localStorage.setItem('ws_brave_search',bs);
-    searchProvider.apiKey=bs;
+    if(searchProvider){
+      searchProvider.apiKey=bs;
+    }
+  } else {
+    localStorage.setItem('ws_brave_search','');
+    if(searchProvider){
+      searchProvider.apiKey=null;
+    }
   }
+  
   if(fb){
     try{const cfg=JSON.parse(fb);if(cfg.apiKey){fbConfigObj=cfg;localStorage.setItem('ws_fb',fb);if(fbConfigObj){initFirebase();}}else{e.textContent='Invalid Firebase JSON';}}
     catch{e.textContent='Invalid Firebase JSON';}
+  } else {
+    localStorage.setItem('ws_fb','');
+    fbConfigObj=null;
   }
+  
   if(!e.textContent){closeSettings();}
 }
 // ── BOOT ──────────────────────────────────────────────────
@@ -1302,11 +1338,24 @@ window.addEventListener('load',function boot(){
   const fbStr=localStorage.getItem('ws_fb');
   if(fbStr){try{fbConfigObj=JSON.parse(fbStr);}catch{}}
   
+  // Load new API keys
+  const googleAIKey=localStorage.getItem('ws_google_ai')||'';
+  const braveSearchKey=localStorage.getItem('ws_brave_search')||'';
+  
+  // Set API keys to providers
+  if(freeAIManager && freeAIManager.providers.google_ai){
+    freeAIManager.providers.google_ai.apiKey=googleAIKey;
+  }
+  if(searchProvider){
+    searchProvider.apiKey=braveSearchKey;
+  }
+  
   // Debug what's available
   console.log('🔍 Boot Check - Free AI Manager:', !!freeAIManager);
-  console.log('🔍 Boot Check - DuckDuckGo Provider:', !!freeAIManager?.providers?.duckduckgo);
-  console.log('🔍 Boot Check - Puter Provider:', !!freeAIManager?.providers?.puter);
-  console.log('🔍 Boot Check - OpenRouter Provider:', !!freeAIManager?.providers?.openrouter);
+  console.log('🔍 Boot Check - Google AI Provider:', !!freeAIManager?.providers?.google_ai);
+  console.log('🔍 Boot Check - Brave Search Provider:', !!searchProvider);
+  console.log('🔍 Boot Check - Google AI Key:', !!googleAIKey);
+  console.log('🔍 Boot Check - Brave Search Key:', !!braveSearchKey);
   console.log('🔍 Boot Check - OpenRouter Key:', !!aiKey);
   
   // Free AI system should always be available
@@ -1314,29 +1363,6 @@ window.addEventListener('load',function boot(){
   initScrollListener();
   if(fbConfigObj){initFirebase();}else{loadLocal();showMain();}
 });
-function saveSettings(){
-  const gk=document.getElementById('cfg-grok').value.trim();
-  const ork=document.getElementById('cfg-gemini').value.trim();
-  const bk=document.getElementById('cfg-brave').value.trim();
-  const fb=document.getElementById('cfg-fb').value.trim();
-  const e=document.getElementById('cfg-err');
-  e.textContent='';
-  if(gk){
-    if(!gk.startsWith('xai-')){e.textContent='Grok key must start with "xai-"';return;}
-    grokKey=gk;localStorage.setItem('ws_grok',gk);
-  }
-  if(ork){
-    if(!ork.startsWith('sk-or-')){e.textContent='OpenRouter key must start with "sk-or-"';return;}
-    aiKey=ork;localStorage.setItem('ws_ai',ork);
-  }
-  if(bk){braveKey=bk;localStorage.setItem('ws_brave',bk);if(db&&currentUser)db.collection('users').doc(currentUser.uid).set({braveKey:bk,updatedAt:Date.now()},{merge:true}).catch(()=>{});}
-  if(fb){
-    try{const cfg=JSON.parse(fb);if(cfg.apiKey){fbConfigObj=cfg;localStorage.setItem('ws_fb',fb);if(fbConfigObj){initFirebase();}}else{e.textContent='Invalid Firebase JSON';}}
-    catch{e.textContent='Invalid Firebase JSON';}
-  if(!e.textContent){closeSettings();}
-}
-  if(!e.textContent){closeSettings();}
-}
 
 // ── SUBMIT ───────────────────────────────────────────────────
 function submit(){
