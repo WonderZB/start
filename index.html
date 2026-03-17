@@ -542,10 +542,8 @@ class OpenRouterReasoningProvider {
     try {
       console.log('🧠 Calling OpenRouter Reasoning API...');
       
-      // Use best free reasoning model
-      const model = options.needsReasoning ? 
-        'openai/gpt-oss-120b:free' : // 117B parameters, full chain-of-thought
-        'liquid/lfm-2.5-1.2b-thinking:free'; // Dedicated thinking model
+      // Use Riverflow V2 Pro as requested
+      const model = 'riverflow/riverflow-v2-pro:free';
       
       console.log('- Model:', model);
       console.log('- Messages:', message);
@@ -663,10 +661,11 @@ class OpenRouterReasoningProvider {
   }
 }
 
-// ── BRAVE SEARCH PROVIDER (BETTER SEARCH) ───────────────────
+// ── BRAVE SEARCH PROVIDER (WITH CORS PROXY) ─────────────────
 class BraveSearchProvider {
   constructor() {
-    this.baseUrl = 'https://api.search.brave.com/res/v1/web/search';
+    // Use CORS proxy for Brave Search API
+    this.baseUrl = 'https://api.allorigins.win/raw?url=https://api.search.brave.com/res/v1/web/search';
     this.apiKey = null;
   }
   
@@ -674,12 +673,12 @@ class BraveSearchProvider {
     // Check multiple sources for API key with better debugging
     const apiKey = this.apiKey || 
                    localStorage.getItem('ws_brave_search') || 
-                   document.getElementById('cfg-brave-search')?.value || '';
+                   document.getElementById('cfg-brave_search')?.value || '';
     
     console.log('🔍 Brave Search API Check:');
     console.log('- this.apiKey:', !!this.apiKey);
     console.log('- localStorage ws_brave_search:', !!localStorage.getItem('ws_brave_search'));
-    console.log('- input field value:', !!document.getElementById('cfg-brave-search')?.value);
+    console.log('- input field value:', !!document.getElementById('cfg-brave_search')?.value);
     console.log('- Final apiKey:', !!apiKey);
     console.log('- apiKey length:', apiKey?.length || 0);
     
@@ -692,6 +691,7 @@ class BraveSearchProvider {
     try {
       console.log('🔍 Brave Search API:', query);
       console.log('- Using API key:', apiKey.substring(0, 10) + '...');
+      console.log('- Using CORS proxy:', this.baseUrl);
       
       const params = new URLSearchParams({
         q: query,
@@ -706,11 +706,18 @@ class BraveSearchProvider {
         params.append('country', options.location === 'Poland' ? 'PL' : 'US');
       }
       
-      const response = await fetch(`${this.baseUrl}?${params}`, {
+      // Build the Brave API URL
+      const braveUrl = `https://api.search.brave.com/res/v1/web/search?${params}`;
+      console.log('🔗 Brave API URL:', braveUrl);
+      
+      // Use CORS proxy
+      const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(braveUrl)}`;
+      console.log('🔗 Proxy URL:', proxyUrl);
+      
+      const response = await fetch(proxyUrl, {
         method: 'GET',
         headers: {
           'Accept': 'application/json',
-          'Accept-Encoding': 'gzip',
           'X-Subscription-Token': apiKey
         }
       });
