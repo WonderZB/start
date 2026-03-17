@@ -573,18 +573,18 @@ class PuterProvider {
       console.log('- Model: grok-2');
       console.log('- Messages:', message);
       
-      const response = await window.puter.ai.chat({
+      // Fix Puter AI call structure
+      const response = await window.puter.ai.chat(message, {
         model: 'grok-2',
-        messages: [{ role: 'user', content: message }],
-        stream: false, // Use non-streaming for simplicity
         temperature: options.needsReasoning ? 0.1 : 0.3,
         max_tokens: 4000
       });
       
       console.log('✅ Puter AI Success!');
+      console.log('Response:', response);
       
       return {
-        content: response,
+        content: response || 'No response received',
         sources: [],
         model: 'Grok-2 (Puter Free)',
         reasoning: options.needsReasoning ? 'Grok-2 reasoning applied' : null,
@@ -1278,18 +1278,18 @@ async function sendToSearch(query){
     
     console.log('✅ Search Results:', searchResults);
     
-    // Format search results for display
+    // Format search results for display with clickable links
     let content = `**Search Results for:** ${query}\n\n`;
     
     // Add instant answer if available
     if (searchResults.instantAnswer) {
       content += `**Instant Answer:**\n${searchResults.instantAnswer}\n\n`;
       if (searchResults.instantAnswerSource) {
-        content += `**Source:** ${searchResults.instantAnswerSource}\n\n`;
+        content += `**Source:** [${searchResults.instantAnswerSource}](${searchResults.instantAnswerSource})\n\n`;
       }
     }
     
-    // Add search results
+    // Add search results with clickable links
     if (searchResults.results && searchResults.results.length > 0) {
       content += `**Top Results:**\n`;
       searchResults.results.forEach((result, index) => {
@@ -1302,9 +1302,32 @@ async function sendToSearch(query){
     }
     
     // Add option to open in new tab
-    content += `\n\n---\n\n[🔍 Open full search in DuckDuckGo](javascript:searchProvider.openInNewTab('${encodeURIComponent(query)}'))`;
+    content += `\n\n---\n\n[🔍 Open full search in DuckDuckGo](javascript:void(0))`;
     
     updateAssistantBubble(bubbleId, content, true, 'DuckDuckGo Search');
+    
+    // Add click handler for the search link
+    setTimeout(() => {
+      const bubble = document.querySelector(`[data-bubble-id="${bubbleId}"]`);
+      if (bubble) {
+        const searchLink = bubble.querySelector('a[href="javascript:void(0)"]');
+        if (searchLink) {
+          searchLink.addEventListener('click', (e) => {
+            e.preventDefault();
+            searchProvider.openInNewTab(query);
+          });
+        }
+        
+        // Make all result links open in new tabs
+        const allLinks = bubble.querySelectorAll('a[href^="http"]');
+        allLinks.forEach(link => {
+          if (!link.href.includes('javascript:')) {
+            link.target = '_blank';
+            link.rel = 'noopener noreferrer';
+          }
+        });
+      }
+    }, 100);
     
   }catch(e){
     console.error('💥 Search Error:', e);
