@@ -542,13 +542,14 @@ class OpenRouterReasoningProvider {
     try {
       console.log('🧠 Calling OpenRouter Reasoning API...');
       
-      // Use the best free reasoning model
+      // Use best free reasoning model
       const model = options.needsReasoning ? 
         'openai/gpt-oss-120b:free' : // 117B parameters, full chain-of-thought
         'liquid/lfm-2.5-1.2b-thinking:free'; // Dedicated thinking model
       
       console.log('- Model:', model);
       console.log('- Messages:', message);
+      console.log('- API Key:', apiKey.substring(0, 10) + '...');
       
       const response = await fetch(this.baseUrl, {
         method: 'POST',
@@ -556,7 +557,8 @@ class OpenRouterReasoningProvider {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${apiKey}`,
           'HTTP-Referer': location.origin,
-          'X-Title': 'WonderStart'
+          'X-Title': 'WonderStart',
+          'User-Agent': 'WonderStart/1.0'
         },
         body: JSON.stringify({
           model: model,
@@ -567,10 +569,25 @@ class OpenRouterReasoningProvider {
         })
       });
       
+      console.log('📊 OpenRouter Response Status:', response.status);
+      console.log('📊 OpenRouter Response OK:', response.ok);
+      
       if (!response.ok) {
         const errorText = await response.text();
         console.error('❌ OpenRouter Error Response:', errorText);
-        throw new Error(`OpenRouter HTTP ${response.status}: ${response.statusText}`);
+        
+        // Try to parse error for more details
+        let errorMsg = `OpenRouter HTTP ${response.status}: ${response.statusText}`;
+        try {
+          const errorData = JSON.parse(errorText);
+          if (errorData.error) {
+            errorMsg = `OpenRouter Error: ${errorData.error.message || errorData.error}`;
+          }
+        } catch (e) {
+          // Use original error if JSON parsing fails
+        }
+        
+        throw new Error(errorMsg);
       }
       
       const data = await response.json();
@@ -1562,29 +1579,18 @@ async function sendToSearch(query){
       }, 100);
       
     } else {
-      // DuckDuckGo fallback - open in new tab instead of embedding
+      // DuckDuckGo fallback - open immediately in new tab
       console.log('🔄 DuckDuckGo fallback - opening in new tab');
       
+      // Open DuckDuckGo search immediately (simple search, not chatbot)
+      const searchUrl = `https://duckduckgo.com/?q=${encodeURIComponent(query)}&ia=web`; // Simple web search
+      window.open(searchUrl, '_blank');
+      
+      // Show minimal message
       let content = `**Search for:** ${query}\n\n`;
-      content += `🔍 **Opening search in DuckDuckGo...**\n\n`;
-      content += `[🔍 Click here if not redirected](https://duckduckgo.com/?q=${encodeURIComponent(query)})`;
+      content += `🔍 **DuckDuckGo search opened in new tab**`;
       
       updateAssistantBubble(bubbleId, content, true, 'DuckDuckGo Search');
-      
-      // Open DuckDuckGo search in new tab (simple search, not chatbot)
-      setTimeout(() => {
-        const searchUrl = `https://duckduckgo.com/?q=${encodeURIComponent(query)}&ia=web`; // Simple web search
-        window.open(searchUrl, '_blank');
-        
-        // Update the bubble to show it's been opened
-        const bubble = document.querySelector(`[data-bubble-id="${bubbleId}"]`);
-        if (bubble) {
-          const contentDiv = bubble.querySelector('.content');
-          if (contentDiv) {
-            contentDiv.innerHTML += `\n\n✅ **Search opened in new tab**`;
-          }
-        }
-      }, 1000);
     }
     
   }catch(e){
