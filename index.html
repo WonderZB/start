@@ -393,6 +393,20 @@ let db=null, fbAuth=null, currentUser=null, fbReady=false;
 let pendingImages=[]; // [{base64, mimeType, previewUrl, name}]
 let pendingFiles=[];   // [{name, content, type}]
 
+// ── PUTER.JS FREE GROK INTEGRATION ─────────────────────
+// Load Puter.js SDK for free unlimited Grok access
+(function() {
+  const script = document.createElement('script');
+  script.src = 'https://js.puter.com/v2/';
+  script.onload = function() {
+    if (window.puter) {
+      console.log('🚀 Puter.js loaded - Free unlimited Grok available!');
+      window.puterAI = window.puter.ai;
+    }
+  };
+  document.head.appendChild(script);
+})();
+
 // ── BOOT ──────────────────────────────────────────────────
 window.addEventListener('load',function boot(){
   aiKey=localStorage.getItem('ws_ai')||localStorage.getItem('ws_gemini')||'';
@@ -400,7 +414,13 @@ window.addEventListener('load',function boot(){
   grokKey=localStorage.getItem('ws_grok')||'';
   const fbStr=localStorage.getItem('ws_fb');
   if(fbStr){try{fbConfigObj=JSON.parse(fbStr);}catch{}}
-  if(!aiKey&&!grokKey){showSetup(1);return;}
+  
+  // Check for Puter AI (free Grok) or need API keys
+  if(!window.puterAI && !aiKey && !grokKey){
+    showSetup(1);
+    return;
+  }
+  
   initScrollListener();
   if(fbConfigObj){initFirebase();}else{loadLocal();showMain();}
 });
@@ -893,12 +913,20 @@ function submit(){
 }
 
 async function sendToAI(query){
-  // Check for API keys
-  if(!grokKey&&!aiKey){alert('Please set up your API key in Settings.');return;}
+  // Check for AI providers
+  const hasPuterAI = !!window.puterAI;
+  const hasGrokKey = !!grokKey;
+  const hasOpenRouterKey = !!aiKey;
+  
+  if(!hasPuterAI && !hasGrokKey && !hasOpenRouterKey){
+    alert('Please set up your API key in Settings.');
+    return;
+  }
   
   console.log('🤖 AI Request Starting...');
-  console.log('- Grok Key Available:', !!grokKey);
-  console.log('- OpenRouter Key Available:', !!aiKey);
+  console.log('- Puter AI Available:', hasPuterAI);
+  console.log('- Grok Key Available:', hasGrokKey);
+  console.log('- OpenRouter Key Available:', hasOpenRouterKey);
   console.log('- Query:', query);
   
   streaming=true;
@@ -927,8 +955,23 @@ async function sendToAI(query){
   let lastError='';
   
   try{
-    // Try Grok first (preferred)
-    if(grokKey){
+    // Try Puter AI first (free unlimited Grok)
+    if(hasPuterAI){
+      console.log('🚀 Trying Puter AI (Free Unlimited Grok)...');
+      try{
+        await callPuterAI(bubbleId, timestamp, query);
+        success=true;
+        console.log('✅ Puter AI Success!');
+      }catch(e){
+        console.warn('⚠️ Puter AI failed:', e);
+        lastError=e.message;
+      }
+    } else {
+      console.log('❌ No Puter AI available');
+    }
+    
+    // Try Grok API second (if key available)
+    if(!success && hasGrokKey){
       console.log('🚀 Trying Grok API...');
       try{
         await callGrokAPI(bubbleId, timestamp, query);
@@ -938,12 +981,12 @@ async function sendToAI(query){
         console.warn('⚠️ Grok API failed:', e);
         lastError=e.message;
       }
-    } else {
+    } else if(!hasGrokKey) {
       console.log('❌ No Grok key available');
     }
     
-    // Fallback to OpenRouter if Grok fails
-    if(!success && aiKey){
+    // Fallback to OpenRouter if all else fails
+    if(!success && hasOpenRouterKey){
       console.log('🔄 Falling back to OpenRouter API...');
       try{
         await callOpenRouterAPI(bubbleId, timestamp, query);
@@ -972,6 +1015,29 @@ async function sendToAI(query){
   }
 }
 
+async function callPuterAI(bubbleId, timestamp, query){
+  try{
+    const response = await window.puterAI.chat.completions.create({
+      model: 'grok-2',
+      messages: currentMessages.map(m=>({
+        role: m.role,
+        content: m.parts.map(p=>p.text||`[Image: ${p.inlineData?.mimeType||'image'}]`).join('\n')
+      })),
+      stream: true,
+      max_tokens: 4000,
+      temperature: 0.3
+    });
+    
+    if(!response.ok){
+      throw new Error(`Puter AI HTTP ${response.status}: ${response.statusText}`);
+    }
+    
+    await processStreamingResponse(response, bubbleId, timestamp, query, 'Grok-2 (Free)');
+  }catch(e){
+    throw new Error(`Puter AI Error: ${e.message}`);
+  }
+}
+
 async function callGrokAPI(bubbleId, timestamp, query){
   const res=await fetch('https://api.x.ai/v1/chat/completions',{
     method:'POST',
@@ -980,7 +1046,7 @@ async function callGrokAPI(bubbleId, timestamp, query){
       'Authorization':`Bearer ${grokKey}`
     },
     body:JSON.stringify({
-      model:'grok',  // Use base model name (latest stable version)
+      model:'grok-3',  // Use correct Grok 3 model name
       messages:currentMessages.map(m=>({
         role:m.role,
         content:m.parts.map(p=>p.text||`[Image: ${p.inlineData?.mimeType||'image'}]`).join('\n')
@@ -1001,7 +1067,7 @@ async function callGrokAPI(bubbleId, timestamp, query){
     throw new Error(`Grok HTTP ${res.status}: ${res.statusText}`);
   }
   
-  await processStreamingResponse(res, bubbleId, timestamp, query, 'Grok-4');
+  await processStreamingResponse(res, bubbleId, timestamp, query, 'Grok-3');
 }
 
 async function callOpenRouterAPI(bubbleId, timestamp, query){
