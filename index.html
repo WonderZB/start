@@ -396,13 +396,23 @@ let pendingFiles=[];   // [{name, content, type}]
 // ── PUTER.JS FREE GROK INTEGRATION ─────────────────────
 // Load Puter.js SDK for free unlimited Grok access
 (function() {
+  console.log('🔧 Loading Puter.js SDK...');
   const script = document.createElement('script');
   script.src = 'https://js.puter.com/v2/';
   script.onload = function() {
-    if (window.puter) {
-      console.log('🚀 Puter.js loaded - Free unlimited Grok available!');
+    console.log('📦 Puter.js script loaded');
+    console.log('🔍 window.puter available:', !!window.puter);
+    console.log('� window.puter.ai available:', !!window.puter?.ai);
+    
+    if (window.puter && window.puter.ai) {
+      console.log('🚀 Puter AI initialized successfully!');
       window.puterAI = window.puter.ai;
+    } else {
+      console.error('❌ Puter AI not available');
     }
+  };
+  script.onerror = function() {
+    console.error('❌ Failed to load Puter.js script');
   };
   document.head.appendChild(script);
 })();
@@ -415,12 +425,19 @@ window.addEventListener('load',function boot(){
   const fbStr=localStorage.getItem('ws_fb');
   if(fbStr){try{fbConfigObj=JSON.parse(fbStr);}catch{}}
   
+  // Debug what's available
+  console.log('🔍 Boot Check - Puter AI:', !!window.puterAI);
+  console.log('🔍 Boot Check - Grok Key:', !!grokKey);
+  console.log('🔍 Boot Check - OpenRouter Key:', !!aiKey);
+  
   // Check for Puter AI (free Grok) or need API keys
   if(!window.puterAI && !aiKey && !grokKey){
+    console.log('⚠️ Showing setup - no AI providers available');
     showSetup(1);
     return;
   }
   
+  console.log('✅ Proceeding with available AI providers');
   initScrollListener();
   if(fbConfigObj){initFirebase();}else{loadLocal();showMain();}
 });
@@ -1017,23 +1034,37 @@ async function sendToAI(query){
 
 async function callPuterAI(bubbleId, timestamp, query){
   try{
+    console.log('🚀 Calling Puter AI API...');
+    console.log('- Model: grok-2');
+    console.log('- Messages count:', currentMessages.length);
+    
+    // Use Puter AI chat completions
     const response = await window.puterAI.chat.completions.create({
       model: 'grok-2',
       messages: currentMessages.map(m=>({
         role: m.role,
         content: m.parts.map(p=>p.text||`[Image: ${p.inlineData?.mimeType||'image'}]`).join('\n')
-      })),
+      }))
+      }),
       stream: true,
       max_tokens: 4000,
       temperature: 0.3
     });
     
+    console.log('📊 Puter Response Status:', response.status);
+    console.log('📊 Puter Response OK:', response.ok);
+    
     if(!response.ok){
+      const errorText = await response.text();
+      console.error('❌ Puter AI Error Response:', errorText);
       throw new Error(`Puter AI HTTP ${response.status}: ${response.statusText}`);
     }
     
-    await processStreamingResponse(response, bubbleId, timestamp, query, 'Grok-2 (Free)');
+    // Handle streaming response
+    await processStreamingResponse(response, bubbleId, timestamp, query, 'Grok-2 (Puter Free)');
+    
   }catch(e){
+    console.error('💥 Puter AI Exception:', e);
     throw new Error(`Puter AI Error: ${e.message}`);
   }
 }
