@@ -890,6 +890,11 @@ async function sendToAI(query){
   // Check for API keys
   if(!grokKey&&!aiKey){alert('Please set up your API key in Settings.');return;}
   
+  console.log('🤖 AI Request Starting...');
+  console.log('- Grok Key Available:', !!grokKey);
+  console.log('- OpenRouter Key Available:', !!aiKey);
+  console.log('- Query:', query);
+  
   streaming=true;
   addUserBubble(query, pendingImages, pendingFiles);
   const bubbleId=addAssistantBubble();
@@ -918,24 +923,32 @@ async function sendToAI(query){
   try{
     // Try Grok first (preferred)
     if(grokKey){
+      console.log('🚀 Trying Grok API...');
       try{
         await callGrokAPI(bubbleId, timestamp, query);
         success=true;
+        console.log('✅ Grok API Success!');
       }catch(e){
-        console.warn('Grok API failed:', e);
+        console.warn('⚠️ Grok API failed:', e);
         lastError=e.message;
       }
+    } else {
+      console.log('❌ No Grok key available');
     }
     
     // Fallback to OpenRouter if Grok fails
     if(!success && aiKey){
+      console.log('🔄 Falling back to OpenRouter API...');
       try{
         await callOpenRouterAPI(bubbleId, timestamp, query);
         success=true;
+        console.log('✅ OpenRouter API Success!');
       }catch(e){
-        console.warn('OpenRouter API failed:', e);
+        console.warn('⚠️ OpenRouter API failed:', e);
         lastError=e.message;
       }
+    } else if(!success) {
+      console.log('❌ No OpenRouter key available for fallback');
     }
     
     if(!success){
@@ -943,7 +956,7 @@ async function sendToAI(query){
     }
     
   }catch(e){
-    console.error('AI Error:', e);
+    console.error('💥 AI Error:', e);
     updateAssistantBubble(bubbleId,'Error: '+e.message,true);
   }finally{
     streaming=false;
@@ -993,7 +1006,7 @@ async function callOpenRouterAPI(bubbleId, timestamp, query){
       'X-Title':'WonderStart'
     },
     body:JSON.stringify({
-      model:'meta-llama/llama-3.2-3b-instruct',
+      model:'meta-llama/llama-3.2-3b-instruct:free',
       messages:currentMessages.map(m=>({
         role:m.role,
         content:m.parts.map(p=>p.text||`[Image: ${p.inlineData?.mimeType||'image'}]`).join('\n')
@@ -1006,6 +1019,7 @@ async function callOpenRouterAPI(bubbleId, timestamp, query){
   
   if(!res.ok){
     const errorText=await res.text();
+    console.error('OpenRouter API Error Response:', errorText);
     if(res.status===402){
       throw new Error('OpenRouter credits exhausted. Please add credits to your account.');
     }
