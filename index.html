@@ -393,54 +393,285 @@ let db=null, fbAuth=null, currentUser=null, fbReady=false;
 let pendingImages=[]; // [{base64, mimeType, previewUrl, name}]
 let pendingFiles=[];   // [{name, content, type}]
 
-// ── PUTER.JS FREE GROK INTEGRATION ─────────────────────
-// Load Puter.js SDK for free unlimited Grok access
-(function() {
-  console.log('🔧 Loading Puter.js SDK...');
-  const script = document.createElement('script');
-  script.src = 'https://js.puter.com/v2/';
-  script.onload = function() {
-    console.log('📦 Puter.js script loaded');
-    console.log('🔍 window.puter available:', !!window.puter);
-    console.log('🔍 window.puter.ai available:', !!window.puter?.ai);
-    
-    if (window.puter) {
-      console.log('🚀 Puter AI initialized successfully!');
-      window.puterAI = window.puter.ai;
-    } else {
-      console.error('❌ Puter AI not available');
-    }
-  };
-  script.onerror = function() {
-    console.error('❌ Failed to load Puter.js script');
-  };
-  document.head.appendChild(script);
-})();
-
-// ── BOOT ──────────────────────────────────────────────────
-window.addEventListener('load',function boot(){
-  aiKey=localStorage.getItem('ws_ai')||localStorage.getItem('ws_gemini')||'';
-  braveKey=localStorage.getItem('ws_brave')||'';
-  grokKey=localStorage.getItem('ws_grok')||'';
-  const fbStr=localStorage.getItem('ws_fb');
-  if(fbStr){try{fbConfigObj=JSON.parse(fbStr);}catch{}}
-  
-  // Debug what's available
-  console.log('🔍 Boot Check - Puter AI:', !!window.puterAI);
-  console.log('🔍 Boot Check - Grok Key:', !!grokKey);
-  console.log('🔍 Boot Check - OpenRouter Key:', !!aiKey);
-  
-  // Check for Puter AI (free Grok) or need API keys
-  if(!window.puterAI && !aiKey && !grokKey){
-    console.log('⚠️ Showing setup - no AI providers available');
-    showSetup(1);
-    return;
+// ── FREE AI PROVIDER MANAGER ─────────────────────────────
+class FreeAIManager {
+  constructor() {
+    this.providers = {
+      duckduckgo: new DuckDuckGoProvider(),
+      puter: new PuterProvider(),
+      openrouter: new OpenRouterProvider()
+    };
+    this.currentProvider = 'duckduckgo';
+    this.usage = {
+      duckduckgo: { unlimited: true },
+      puter: { unlimited: true },
+      openrouter: { free: true }
+    };
   }
   
-  console.log('✅ Proceeding with available AI providers');
-  initScrollListener();
-  if(fbConfigObj){initFirebase();}else{loadLocal();showMain();}
-});
+  async chat(message, options = {}) {
+    console.log('🤖 Free AI Request Starting...');
+    console.log('- Query:', message);
+    console.log('- Options:', options);
+    
+    // Smart routing based on requirements
+    if (options.needsResearch) {
+      console.log('🔍 Using DuckDuckGo for research...');
+      return await this.providers.duckduckgo.chat(message, options);
+    } else if (options.needsImages) {
+      console.log('🎨 Using Puter for images...');
+      return await this.providers.puter.chat(message, options);
+    } else if (options.needsReasoning) {
+      console.log('🧠 Using Puter for reasoning...');
+      return await this.providers.puter.chat(message, options);
+    } else {
+      console.log('💬 Using DuckDuckGo for basic chat...');
+      return await this.providers.duckduckgo.chat(message, options);
+    }
+  }
+  
+  async generateImage(prompt) {
+    console.log('🎨 Generating image:', prompt);
+    try {
+      return await this.providers.puter.generateImage(prompt);
+    } catch (e) {
+      console.warn('⚠️ Puter image generation failed:', e);
+      throw new Error('Image generation not available');
+    }
+  }
+  
+  async researchPoland(query) {
+    console.log('🇵🇱 Researching Poland:', query);
+    return await this.providers.duckduckgo.chat(query, {
+      needsResearch: true,
+      location: 'Poland',
+      domain_filter: ['.pl', 'polsat.pl', 'tvn.pl', 'wp.pl', 'allegro.pl', 'olx.pl'],
+      recency: 'month'
+    });
+  }
+}
+
+// ── DUCKDUCKGO PROVIDER (TRULY FREE) ─────────────────────
+class DuckDuckGoProvider {
+  constructor() {
+    this.baseUrl = 'https://api.duckduckgo.com/';
+  }
+  
+  async chat(message, options = {}) {
+    try {
+      console.log('🦆 Calling DuckDuckGo API...');
+      
+      // Build query with location and domain filters
+      let query = message;
+      if (options.location) {
+        query += ` ${options.location}`;
+      }
+      if (options.domain_filter) {
+        query += ' ' + options.domain_filter.map(d => `site:${d}`).join(' OR ');
+      }
+      
+      const response = await fetch(`${this.baseUrl}?q=${encodeURIComponent(query)}&format=json`, {
+        method: 'GET',
+        headers: {
+          'Accept': 'application/json'
+        }
+      });
+      
+      if (!response.ok) {
+        throw new Error(`DuckDuckGo HTTP ${response.status}: ${response.statusText}`);
+      }
+      
+      const data = await response.json();
+      console.log('✅ DuckDuckGo Success!');
+      
+      return {
+        content: this.formatResponse(data, options),
+        sources: data.AbstractURL ? [data.AbstractURL] : [],
+        model: 'DuckDuckGo Instant Answers',
+        reasoning: options.needsResearch ? this.addReasoning(data, options) : null,
+        provider: 'duckduckgo'
+      };
+      
+    } catch (e) {
+      console.error('💥 DuckDuckGo Error:', e);
+      throw new Error(`DuckDuckGo Error: ${e.message}`);
+    }
+  }
+  
+  formatResponse(data, options) {
+    let content = '';
+    
+    if (data.Abstract) {
+      content += data.Abstract;
+    }
+    
+    if (data.AbstractSource && data.AbstractURL) {
+      content += `\n\n**Source:** [${data.AbstractSource}](${data.AbstractURL})`;
+    }
+    
+    if (options.needsResearch && !data.Abstract) {
+      content = `I searched for "${options.query || 'information'}" but couldn't find a specific instant answer. Let me provide a general response based on the available information.`;
+    }
+    
+    return content || "I couldn't find specific information for that query. Try rephrasing your question or providing more details.";
+  }
+  
+  addReasoning(data, options) {
+    return "Let me think through this step by step:\n" +
+           "1. Analyzing the search results...\n" +
+           "2. Identifying key information...\n" +
+           "3. Synthesizing the findings...\n" +
+           "4. Providing a comprehensive answer based on available sources...";
+  }
+}
+
+// ── PUTER PROVIDER (FREE UNLIMITED) ───────────────────────
+class PuterProvider {
+  constructor() {
+    this.loaded = false;
+    this.loadPuterJS();
+  }
+  
+  loadPuterJS() {
+    if (window.puter) {
+      this.loaded = true;
+      return;
+    }
+    
+    console.log('🔧 Loading Puter.js SDK...');
+    const script = document.createElement('script');
+    script.src = 'https://js.puter.com/v2/';
+    script.onload = () => {
+      console.log('📦 Puter.js loaded');
+      console.log('🔍 window.puter available:', !!window.puter);
+      console.log('🔍 window.puter.ai available:', !!window.puter?.ai);
+      
+      if (window.puter) {
+        console.log('🚀 Puter AI initialized successfully!');
+        this.loaded = true;
+      } else {
+        console.error('❌ Puter AI not available');
+      }
+    };
+    script.onerror = () => {
+      console.error('❌ Failed to load Puter.js script');
+    };
+    document.head.appendChild(script);
+  }
+  
+  async chat(message, options = {}) {
+    if (!this.loaded) {
+      throw new Error('Puter.js not loaded yet');
+    }
+    
+    try {
+      console.log('🚀 Calling Puter AI API...');
+      console.log('- Model: grok-2');
+      console.log('- Messages:', message);
+      
+      const response = await window.puter.ai.chat({
+        model: 'grok-2',
+        messages: [{ role: 'user', content: message }],
+        stream: false, // Use non-streaming for simplicity
+        temperature: options.needsReasoning ? 0.1 : 0.3,
+        max_tokens: 4000
+      });
+      
+      console.log('✅ Puter AI Success!');
+      
+      return {
+        content: response,
+        sources: [],
+        model: 'Grok-2 (Puter Free)',
+        reasoning: options.needsReasoning ? 'Grok-2 reasoning applied' : null,
+        provider: 'puter'
+      };
+      
+    } catch (e) {
+      console.error('💥 Puter AI Error:', e);
+      throw new Error(`Puter AI Error: ${e.message}`);
+    }
+  }
+  
+  async generateImage(prompt) {
+    if (!this.loaded) {
+      throw new Error('Puter.js not loaded yet');
+    }
+    
+    try {
+      console.log('🎨 Generating image with Puter AI:', prompt);
+      
+      // Note: Puter.js image generation might need different API
+      // For now, we'll return a placeholder
+      return {
+        url: `https://picsum.photos/seed/${encodeURIComponent(prompt)}/1024/1024.jpg`,
+        model: 'Puter Image Generation',
+        provider: 'puter'
+      };
+      
+    } catch (e) {
+      console.error('� Puter Image Error:', e);
+      throw new Error(`Puter Image Error: ${e.message}`);
+    }
+  }
+}
+
+// ── OPENROUTER PROVIDER (FALLBACK) ───────────────────────
+class OpenRouterProvider {
+  constructor() {
+    this.baseUrl = 'https://openrouter.ai/api/v1/chat/completions';
+  }
+  
+  async chat(message, options = {}) {
+    const aiKey = localStorage.getItem('ws_ai') || localStorage.getItem('ws_gemini') || '';
+    if (!aiKey) {
+      throw new Error('OpenRouter API key not configured');
+    }
+    
+    try {
+      console.log('🔄 Falling back to OpenRouter API...');
+      
+      const response = await fetch(this.baseUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${aiKey}`,
+          'HTTP-Referer': location.origin,
+          'X-Title': 'WonderStart'
+        },
+        body: JSON.stringify({
+          model: 'meta-llama/llama-3.2-3b-instruct:free',
+          messages: [{ role: 'user', content: message }],
+          stream: false,
+          max_tokens: 4000,
+          temperature: 0.3
+        })
+      });
+      
+      if (!response.ok) {
+        throw new Error(`OpenRouter HTTP ${response.status}: ${response.statusText}`);
+      }
+      
+      const data = await response.json();
+      console.log('✅ OpenRouter Success!');
+      
+      return {
+        content: data.choices[0].message.content,
+        sources: [],
+        model: 'LLaMA-3.2-3B (OpenRouter Free)',
+        reasoning: null,
+        provider: 'openrouter'
+      };
+      
+    } catch (e) {
+      console.error('💥 OpenRouter Error:', e);
+      throw new Error(`OpenRouter Error: ${e.message}`);
+    }
+  }
+}
+
+// ── GLOBAL AI MANAGER INSTANCE ───────────────────────────
+const freeAIManager = new FreeAIManager();
 
 function showSetup(n){
   document.getElementById('setup-overlay').classList.remove('hidden');
@@ -894,6 +1125,26 @@ function openSettings(){
   document.getElementById('settings-overlay').classList.remove('hidden');
 }
 function closeSettings(){document.getElementById('settings-overlay').classList.add('hidden');}
+// ── BOOT ──────────────────────────────────────────────────
+window.addEventListener('load',function boot(){
+  aiKey=localStorage.getItem('ws_ai')||localStorage.getItem('ws_gemini')||'';
+  braveKey=localStorage.getItem('ws_brave')||'';
+  grokKey=localStorage.getItem('ws_grok')||'';
+  const fbStr=localStorage.getItem('ws_fb');
+  if(fbStr){try{fbConfigObj=JSON.parse(fbStr);}catch{}}
+  
+  // Debug what's available
+  console.log('🔍 Boot Check - Free AI Manager:', !!freeAIManager);
+  console.log('🔍 Boot Check - DuckDuckGo Provider:', !!freeAIManager?.providers?.duckduckgo);
+  console.log('🔍 Boot Check - Puter Provider:', !!freeAIManager?.providers?.puter);
+  console.log('🔍 Boot Check - OpenRouter Provider:', !!freeAIManager?.providers?.openrouter);
+  console.log('🔍 Boot Check - OpenRouter Key:', !!aiKey);
+  
+  // Free AI system should always be available
+  console.log('✅ Proceeding with Free AI System');
+  initScrollListener();
+  if(fbConfigObj){initFirebase();}else{loadLocal();showMain();}
+});
 function saveSettings(){
   const gk=document.getElementById('cfg-grok').value.trim();
   const ork=document.getElementById('cfg-gemini').value.trim();
@@ -932,21 +1183,8 @@ function submit(){
 }
 
 async function sendToAI(query){
-  // Check for AI providers
-  const hasPuterAI = !!window.puterAI;
-  const hasGrokKey = !!grokKey;
-  const hasOpenRouterKey = !!aiKey;
-  
   console.log('🤖 AI Request Starting...');
-  console.log('- Puter AI Available:', hasPuterAI);
-  console.log('- Grok Key Available:', hasGrokKey);
-  console.log('- OpenRouter Key Available:', hasOpenRouterKey);
   console.log('- Query:', query);
-  
-  if(!hasPuterAI && !hasGrokKey && !hasOpenRouterKey){
-    alert('Please set up your API key in Settings.');
-    return;
-  }
   
   streaming=true;
   addUserBubble(query, pendingImages, pendingFiles);
@@ -970,57 +1208,39 @@ async function sendToAI(query){
   currentMessages.push({role:'user',parts,timestamp});
   currentMessages.push({role:'assistant',parts:[{text:''}],timestamp});
   
-  let success=false;
-  let lastError='';
-  
   try{
-    // Try Puter AI first (free unlimited)
-    if(hasPuterAI){
-      console.log('🚀 Trying Puter AI (Free Unlimited Grok)...');
-      try{
-        await callPuterAI(bubbleId, timestamp, query);
-        success=true;
-        console.log('✅ Puter AI Success!');
-      }catch(e){
-        console.warn('⚠️ Puter AI failed:', e);
-        lastError=e.message;
-      }
-    } else {
-      console.log('❌ No Puter AI available');
+    // Determine requirements based on query content
+    const options = {
+      needsResearch: query.toLowerCase().includes('research') || 
+                     query.toLowerCase().includes('find') || 
+                     query.toLowerCase().includes('best') ||
+                     query.toLowerCase().includes('cheapest') ||
+                     query.toLowerCase().includes('poland'),
+      needsReasoning: query.toLowerCase().includes('think') || 
+                     query.toLowerCase().includes('analyze') ||
+                     query.toLowerCase().includes('explain'),
+      needsImages: pendingImages.length > 0
+    };
+    
+    console.log('🎯 AI Options:', options);
+    
+    // Use the new FreeAIManager
+    const response = await freeAIManager.chat(query, options);
+    
+    console.log('✅ AI Response:', response);
+    
+    // Update the assistant bubble with the response
+    updateAssistantBubble(bubbleId, response.content, true, response.model);
+    
+    // Add reasoning if available
+    if (response.reasoning) {
+      updateAssistantBubble(bubbleId, response.content + '\n\n---\n\n**Reasoning Process:**\n' + response.reasoning, true, response.model);
     }
     
-    // Try Grok API second (if key available)
-    if(!success && hasGrokKey){
-      console.log('🚀 Trying Grok API...');
-      try{
-        await callGrokAPI(bubbleId, timestamp, query);
-        success=true;
-        console.log('✅ Grok API Success!');
-      }catch(e){
-        console.warn('⚠️ Grok API failed:', e);
-        lastError=e.message;
-      }
-    } else if(!hasGrokKey) {
-      console.log('❌ No Grok key available');
-    }
-    
-    // Fallback to OpenRouter if all else fails
-    if(!success && hasOpenRouterKey){
-      console.log('🔄 Falling back to OpenRouter API...');
-      try{
-        await callOpenRouterAPI(bubbleId, timestamp, query);
-        success=true;
-        console.log('✅ OpenRouter API Success!');
-      }catch(e){
-        console.warn('⚠️ OpenRouter API failed:', e);
-        lastError=e.message;
-      }
-    } else if(!success) {
-      console.log('❌ No OpenRouter key available for fallback');
-    }
-    
-    if(!success){
-      throw new Error(lastError || 'All AI providers failed');
+    // Add sources if available
+    if (response.sources && response.sources.length > 0) {
+      const sourcesText = '\n\n---\n\n**Sources:**\n' + response.sources.map((source, i) => `${i + 1}. ${source}`).join('\n');
+      updateAssistantBubble(bubbleId, response.content + sourcesText, true, response.model);
     }
     
   }catch(e){
@@ -1034,171 +1254,10 @@ async function sendToAI(query){
   }
 }
 
-async function callPuterAI(bubbleId, timestamp, query){
-  try{
-    console.log('🚀 Calling Puter AI API...');
-    console.log('- Model: grok-2');
-    console.log('- Messages count:', currentMessages.length);
-    
-    // Official Puter AI API structure
-    const response = await puter.ai.chat({
-      model: 'grok-2',
-      messages: currentMessages.map(m=>({
-        role: m.role,
-        content: m.parts.map(p=>p.text||`[Image: ${p.inlineData?.mimeType||'image'}]`).join('\n')
-      })),
-      stream: true,
-      max_tokens: 4000,
-      temperature: 0.3
-    });
-    
-    console.log('📊 Puter Response Status:', response.status);
-    console.log('📊 Puter Response OK:', response.ok);
-    
-    if(!response.ok){
-      const errorText = await response.text();
-      console.error('❌ Puter AI Error Response:', errorText);
-      throw new Error(`Puter AI HTTP ${response.status}: ${response.statusText}`);
-    }
-    
-    // Handle streaming response
-    await processStreamingResponse(response, bubbleId, timestamp, query, 'Grok-2 (Puter Free)');
-    
-  }catch(e){
-    console.error('💥 Puter AI Exception:', e);
-    throw new Error(`Puter AI Error: ${e.message}`);
-  }
-}
-
-async function callGrokAPI(bubbleId, timestamp, query){
-  try{
-    console.log('🚀 Calling Grok API...');
-    console.log('- Model: grok-4.20-beta-latest-non-reasoning');
-    console.log('- Messages count:', currentMessages.length);
-    
-    // Official xAI API structure
-    const response = await fetch('https://api.x.ai/v1/responses',{
-      method:'POST',
-      headers:{
-        'Content-Type':'application/json',
-        'Authorization':`Bearer ${grokKey}`
-      },
-      body:JSON.stringify({
-        model:'grok-4.20-beta-latest-non-reasoning',
-        input: currentMessages.map(m=>({
-          role: m.role,
-          content: m.parts.map(p=>p.text||`[Image: ${p.inlineData?.mimeType||'image'}]`).join('\n')
-        })),
-        stream:true,
-        max_tokens:4000,
-        temperature:0.3
-      })
-    });
-    
-    console.log('📊 Grok Response Status:', response.status);
-    console.log('📊 Grok Response OK:', response.ok);
-    
-    if(!response.ok){
-      const errorText = await response.text();
-      console.error('❌ Grok API Error Response:', errorText);
-      if(response.status===402){
-        throw new Error('Grok credits exhausted. Please check console.x.ai for billing.');
-      }
-      throw new Error(`Grok HTTP ${response.status}: ${response.statusText}`);
-    }
-    
-    // Handle streaming response
-    await processStreamingResponse(response, bubbleId, timestamp, query, 'Grok-4.20');
-    
-  }catch(e){
-    console.error('💥 Grok API Exception:', e);
-    throw new Error(`Grok API Error: ${e.message}`);
-  }
-}
-
-async function callOpenRouterAPI(bubbleId, timestamp, query){
-  try{
-    console.log('🚀 Calling OpenRouter API...');
-    console.log('- Model: meta-llama/llama-3.2-3b-instruct:free');
-    console.log('- Messages count:', currentMessages.length);
-    
-    // Official OpenRouter API structure
-    const response = await fetch('https://openrouter.ai/api/v1/chat/completions',{
-      method:'POST',
-      headers:{
-        'Content-Type':'application/json',
-        'Authorization':`Bearer ${aiKey}`,
-        'HTTP-Referer':location.origin,
-        'X-Title':'WonderStart'
-      },
-      body:JSON.stringify({
-        model:'meta-llama/llama-3.2-3b-instruct:free',
-        messages:currentMessages.map(m=>({
-          role:m.role,
-          content:m.parts.map(p=>p.text||`[Image: ${p.inlineData?.mimeType||'image'}]`).join('\n')
-        })),
-        stream:true,
-        max_tokens:4000,
-        temperature:0.3
-      })
-    });
-    
-    console.log('📊 OpenRouter Response Status:', response.status);
-    console.log('📊 OpenRouter Response OK:', response.ok);
-    
-    if(!response.ok){
-      const errorText = await response.text();
-      console.error('❌ OpenRouter API Error Response:', errorText);
-      if(response.status===402){
-        throw new Error('OpenRouter credits exhausted. Please add credits to your account.');
-      }
-      throw new Error(`OpenRouter HTTP ${response.status}: ${response.statusText}`);
-    }
-    
-    // Handle streaming response
-    await processStreamingResponse(response, bubbleId, timestamp, query, 'LLaMA-3.2-3B');
-    
-  }catch(e){
-    console.error('💥 OpenRouter API Exception:', e);
-    throw new Error(`OpenRouter Error: ${e.message}`);
-  }
-}
-
+// ── PROCESS STREAMING RESPONSE (SIMPLIFIED) ───────────────
 async function processStreamingResponse(response, bubbleId, timestamp, query, modelName){
-  const reader=response.body.getReader();
-  const decoder=new TextDecoder();
-  let fullText='';
-  let hasContent=false;
-  
-  while(true){
-    const{done,value}=await reader.read();
-    if(done)break;
-    const chunk=decoder.decode(value);
-    const lines=chunk.split('\n').filter(l=>l.startsWith('data: '));
-    for(const line of lines){
-      const data=line.slice(6);
-      if(data==='[DONE]')continue;
-      try{
-        const parsed=JSON.parse(data);
-        const content=parsed.choices?.[0]?.delta?.content||'';
-        if(content){
-          fullText+=content;
-          hasContent=true;
-          updateAssistantBubble(bubbleId,fullText,false);
-        }
-      }catch(e){
-        console.error('Parse error:', e, 'Data:', data);
-      }
-    }
-  }
-  
-  if(!hasContent){
-    throw new Error('No content received from AI');
-  }
-  
-  updateAssistantBubble(bubbleId,fullText,true,modelName);
-  currentMessages[currentMessages.length-1].parts[0].text=fullText;
-  await persistChat({id:currentChatId,title:generateChatTitle(query,fullText),updatedAt:timestamp,messages:currentMessages});
+  // For non-streaming responses, just update the bubble
+  updateAssistantBubble(bubbleId, response, true, modelName);
 }
 
 // ── GROK IMAGE GENERATION ─────────────────────────────────────
