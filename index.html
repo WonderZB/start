@@ -3,7 +3,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, interactive-widget=resizes-content">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover, interactive-widget=resizes-content">
 <title>WonderStart</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital@0;1&family=IBM+Plex+Mono:wght@400;500&family=DM+Sans:wght@300;400;500&family=Syne:wght@700&display=swap" rel="stylesheet">
@@ -14,7 +14,7 @@
   --text:#e8e4d8;--muted:#6b6d7d;--accent:#c9922a;--accent-dim:rgba(201,146,42,0.12);
   --red:#cf5c5c;--radius:10px;--sw:260px;--ib:80px;
 }
-html,body{height:100%;background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;font-size:15px;line-height:1.6;-webkit-font-smoothing:antialiased}
+html,body{height:100%;background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;font-size:15px;line-height:1.6;-webkit-font-smoothing:antialiased;-webkit-touch-callout:none;-webkit-user-select:none;user-select:none;touch-action:pan-y}
 
 /* ── OVERLAYS ── */
 .overlay{position:fixed;inset:0;background:rgba(0,0,0,0.75);display:flex;align-items:center;justify-content:center;z-index:300;padding:1.5rem;overflow-y:auto}
@@ -128,7 +128,7 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'DM San
 .sr-msg a:hover,.sr-msg button.link:hover{text-decoration:underline}
 
 /* ── INPUT BAR ── */
-#input-bar{flex-shrink:0;border-top:1px solid var(--border);padding:.75rem 1rem;background:var(--bg)}
+#input-bar{flex-shrink:0;border-top:1px solid var(--border);padding:.75rem 1rem;background:var(--bg);position:sticky;bottom:0;z-index:10}
 .ib-inner{max-width:720px;margin:0 auto;display:flex;flex-direction:column;gap:.5rem}
 
 /* attachment preview */
@@ -142,12 +142,12 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'DM San
 /* text row */
 .ib-row{display:flex;align-items:flex-end;gap:.5rem;background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:.5rem .5rem .5rem .75rem;transition:border-color .15s}
 .ib-row:focus-within{border-color:rgba(201,146,42,.4)}
-#query{flex:1;background:transparent;border:none;outline:none;resize:none;font-family:‘DM Sans’,sans-serif;font-size:.95rem;font-weight:300;color:var(--text);line-height:1.55;min-height:26px;max-height:180px;overflow-y:auto;padding:.2rem 0}
+#query{flex:1;background:transparent;border:none;outline:none;resize:none;font-family:'DM Sans',sans-serif;font-size:.95rem;font-weight:300;color:var(--text);line-height:1.55;min-height:26px;max-height:180px;overflow-y:auto;padding:.2rem 0;-webkit-user-select:text;user-select:text;touch-action:manipulation}
 #query::placeholder{color:var(--muted)}
 .ib-actions{display:flex;align-items:center;gap:.35rem;flex-shrink:0}
 .ib-icon-btn{width:30px;height:30px;border-radius:7px;background:transparent;border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;color:var(--muted);transition:color .15s,background .15s;flex-shrink:0}
 .ib-icon-btn:hover{color:var(--text);background:var(--surface2)}
-#send-btn{width:30px;height:30px;border-radius:7px;background:var(--accent);border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:opacity .15s,transform .1s;flex-shrink:0}
+#send-btn{width:30px;height:30px;border-radius:7px;background:var(--accent);border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:opacity .15s,transform .1s;flex-shrink:0;touch-action:manipulation}
 #send-btn:hover{opacity:.85}#send-btn:active{transform:scale(.95)}
 #send-btn:disabled{opacity:.35;cursor:default}
 .ib-hint{font-size:.68rem;color:var(--muted);text-align:center;font-family:‘IBM Plex Mono’,monospace}
@@ -165,11 +165,11 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'DM San
 #settings-btn{display:flex}
 #sb-backdrop.open{display:block}
 #mode-bar-title{display:none}
-#main-col{min-height:0;height:100%}
-#thread{padding:.75rem .75rem .5rem;-webkit-overflow-scrolling:touch;flex:1;min-height:0}
+#main-col{min-height:0;height:100vh;height:100dvh}
+#thread{padding:.75rem .75rem .5rem;-webkit-overflow-scrolling:touch;flex:1;min-height:0;padding-bottom:100px}
 .msg{max-width:100%}
 .bubble{max-width:92%;font-size:.9rem}
-#input-bar{flex-shrink:0;padding:.5rem .75rem env(safe-area-inset-bottom,.5rem)}
+#input-bar{flex-shrink:0;padding:.5rem .75rem env(safe-area-inset-bottom,.5rem);position:fixed;bottom:0;left:0;right:0;background:var(--bg);z-index:20}
 .ib-inner{max-width:100%}
 .ib-hint{display:none}
 #query{font-size:16px}
@@ -746,6 +746,112 @@ function saveSettings(){
   if(db&&currentUser&&(aiKey||braveKey)){
     db.collection('users').doc(currentUser.uid).set({aiKey,braveKey,updatedAt:Date.now()},{merge:true}).catch(()=>{});
   }
+}
+
+// ── SUBMIT ───────────────────────────────────────────────────
+function submit(){
+  const query=document.getElementById('query').value.trim();
+  if(!query||streaming)return;
+  if(mode==='ai'){
+    sendToAI(query);
+  }else{
+    sendToSearch(query);
+  }
+  document.getElementById('query').value='';
+  autoResize(document.getElementById('query'));
+}
+
+async function sendToAI(query){
+  if(!aiKey){alert('Please set up your OpenRouter API key in Settings.');return;}
+  streaming=true;
+  addUserBubble(query, pendingImages);
+  const bubbleId=addAssistantBubble();
+  currentChatId=currentChatId||genId();
+  currentMessages.push({role:'user',parts:[{text:query},...pendingImages.map(img=>({inlineData:{mimeType:img.mimeType,data:img.data}}))]});
+  currentMessages.push({role:'assistant',parts:[{text:''}]});
+  try{
+    const res=await fetch('https://openrouter.ai/api/v1/chat/completions',{
+      method:'POST',headers:{'Content-Type':'application/json','Authorization':`Bearer ${aiKey}`,'HTTP-Referer':location.origin,'X-Title':'WonderStart'},
+      body:JSON.stringify({model:'qwen/qwen-2.5-7b-instruct',messages:currentMessages.map(m=>({role:m.role,content:m.parts.map(p=>p.text||`[Image: ${p.inlineData?.mimeType||'image'}]`).join('\n')})),stream:true,max_tokens:4000,temperature:0.7})
+    });
+    const reader=res.body.getReader();
+    const decoder=new TextDecoder();
+    let fullText='';
+    while(true){
+      const{done,value}=await reader.read();
+      if(done)break;
+      const chunk=decoder.decode(value);
+      const lines=chunk.split('\n').filter(l=>l.startsWith('data: '));
+      for(const line of lines){
+        const data=line.slice(6);
+        if(data==='[DONE]')continue;
+        try{
+          const parsed=JSON.parse(data);
+          const content=parsed.choices?.[0]?.delta?.content||'';
+          if(content){
+            fullText+=content;
+            updateAssistantBubble(bubbleId,fullText,false);
+          }
+        }catch{}
+      }
+    }
+    updateAssistantBubble(bubbleId,fullText,true,'qwen-2.5-7b');
+    currentMessages[currentMessages.length-1].parts[0].text=fullText;
+    await persistChat({id:currentChatId,title:query.slice(0,50),updatedAt:Date.now(),messages:currentMessages});
+  }catch(e){
+    updateAssistantBubble(bubbleId,'Error: '+e.message,true);
+  }finally{
+    streaming=false;
+    pendingImages=[];
+    renderAttachPreview();
+  }
+}
+
+async function sendToSearch(query){
+  if(!braveKey){
+    addSearchBlock(query,null,null,`Search key not set. Using DuckDuckGo redirect.`);
+    setTimeout(()=>window.open(`https://duckduckgo.com/?q=${encodeURIComponent(query)}`,'_blank'),1000);
+    return;
+  }
+  try{
+    const res=await fetch('https://google.serper.dev/search',{
+      method:'POST',headers:{'X-API-KEY':braveKey,'Content-Type':'application/json'},
+      body:JSON.stringify({q:query,num:10})
+    });
+    const data=await res.json();
+    const results=data.organic?.map(r=>({
+      title:r.title,url:r.link,description:r.snippet,thumbnail:r.imageUrl
+    }))||[];
+    const images=data.images?.slice(0,6).map(i=>({
+      src:i.imageUrl,title:i.title,url:i.link
+    }))||[];
+    addSearchBlock(query,results,images,null);
+    currentChatId=currentChatId||genId();
+    currentMessages.push({role:'user',parts:[{text:query}]});
+    currentMessages.push({role:'assistant',parts:[{text:`Search results for "${query}":\n\n${results.map(r=>`- [${r.title}](${r.url})\n${r.description}`).join('\n\n')}`}]});
+    await persistChat({id:currentChatId,title:query.slice(0,50),updatedAt:Date.now(),messages:currentMessages});
+  }catch(e){
+    addSearchBlock(query,null,null,'Search failed: '+e.message);
+  }
+}
+
+function renderAttachPreview(){
+  const preview=document.getElementById('attach-preview');
+  if(!pendingImages.length){
+    preview.innerHTML='';
+    return;
+  }
+  preview.innerHTML=pendingImages.map((img,i)=>`
+    <div class="ap-item">
+      <img src="${img.previewUrl}" alt="">
+      <button class="ap-rm" onclick="removePendingImage(${i})">×</button>
+    </div>
+  `).join('');
+}
+
+function removePendingImage(i){
+  pendingImages.splice(i,1);
+  renderAttachPreview();
 }
 
 function mdLite(t){
