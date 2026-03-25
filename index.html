@@ -87,6 +87,15 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'DM San
 #thread::-webkit-scrollbar{width:4px}
 #thread::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px}
 
+/* ── EMBEDDED CONTAINER ── */
+.embedded-container{position:fixed;top:0;left:0;width:100%;height:100%;background:#1a1a1a;z-index:1000;display:flex;flex-direction:column}
+.embedded-header{display:flex;justify-content:space-between;align-items:center;padding:1rem;background:#2a2a2a;border-bottom:1px solid #3a3a3a}
+.embedded-title{color:#fff;font-weight:600;font-size:1rem}
+.embedded-close{background:none;border:none;color:#fff;font-size:1.2rem;cursor:pointer;padding:0.5rem;border-radius:0.25rem;transition:background 0.2s}
+.embedded-close:hover{background:#3a3a3a}
+.embedded-content{flex:1;overflow:hidden}
+.embedded-container.hidden{display:none}
+
 /* EMPTY STATE */
 #empty{display:flex;flex-direction:column;align-items:center;justify-content:center;flex:1;gap:.75rem;pointer-events:none;padding-bottom:4rem}
 .wm{font-family:‘Syne’,sans-serif;font-size:1.4rem;font-weight:700;letter-spacing:.04em;font-style:normal;color:var(--muted)}
@@ -273,6 +282,17 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'DM San
   </div>
 </div>
 
+<!-- EMBEDDED CONTAINER -->
+<div class="embedded-container hidden" id="embedded-container">
+  <div class="embedded-header">
+    <div class="embedded-title" id="embedded-title">AI Mode</div>
+    <button class="embedded-close" onclick="closeEmbedded()">✕</button>
+  </div>
+  <div class="embedded-content" id="embedded-content">
+    <iframe id="embedded-iframe" style="width: 100%; height: 100%; border: none;"></iframe>
+  </div>
+</div>
+
 <!-- SETTINGS -->
 
 <div class="overlay hidden" id="settings-overlay">
@@ -335,8 +355,8 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'DM San
     </svg>
   </button>
   <div class="modes">
-    <button class="mode-btn active" id="btn-ai" onclick="setMode('ai')">✦ AI</button>
-    <button class="mode-btn" id="btn-search" onclick="setMode('search')">⌕ Search</button>
+    <div class="mode-btn active" id="ai-mode" onclick="toggleMode('ai')">AI</div>
+    <div class="mode-btn" id="search-mode" onclick="toggleMode('search')">Search</div>
   </div>
   <button id="settings-btn" onclick="openSettings()">
     <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24">
@@ -661,140 +681,62 @@ class OpenRouterReasoningProvider {
   }
 }
 
-// ── BRAVE SEARCH PROVIDER (SIMPLIFIED CORS FIX) ───────────────
+// ── BRAVE SEARCH PROVIDER (SERVERLESS FUNCTION) ───────────────
 class BraveSearchProvider {
   constructor() {
-    this.baseUrl = 'https://api.search.brave.com/res/v1/web/search';
+    // Use serverless function to avoid CORS issues
+    this.apiUrl = window.location.origin + '/api/brave-search';
     this.apiKey = null;
   }
   
   async search(query, options = {}) {
-    // Check multiple sources for API key with better debugging
-    const apiKey = this.apiKey || 
-                   localStorage.getItem('ws_brave_search') || 
-                   document.getElementById('cfg-brave-search')?.value || '';
-    
-    console.log('🔍 Brave Search API Check:');
-    console.log('- this.apiKey:', !!this.apiKey);
-    console.log('- localStorage ws_brave_search:', !!localStorage.getItem('ws_brave_search'));
-    console.log('- input field value:', !!document.getElementById('cfg-brave-search')?.value);
-    console.log('- Final apiKey:', !!apiKey);
-    console.log('- apiKey length:', apiKey?.length || 0);
-    
-    if (!apiKey) {
-      // Fallback to DuckDuckGo if no Brave API key
-      console.log('⚠️ No Brave Search API key, falling back to DuckDuckGo');
-      return await this.fallbackToDuckDuckGo(query, options);
-    }
+    console.log('🔍 Brave Search Serverless Function:', query);
+    console.log('- Function URL:', this.apiUrl);
     
     try {
-      console.log('🔍 Brave Search API:', query);
-      console.log('- Using API key:', apiKey.substring(0, 10) + '...');
-      
-      const params = new URLSearchParams({
-        q: query,
-        count: '10',
-        text_decorations: 'false',
-        spellcheck: 'true',
-        result_filter: 'web',
-        safesearch: 'moderate'
-      });
-      
-      if (options.location) {
-        params.append('country', options.location === 'Poland' ? 'PL' : 'US');
-      }
-      
-      // Build the Brave API URL
-      const braveUrl = `${this.baseUrl}?${params}`;
-      console.log('🔗 Brave API URL:', braveUrl);
-      
-      // Try direct fetch first (might work with proper headers)
-      try {
-        const response = await fetch(braveUrl, {
-          method: 'GET',
-          headers: {
-            'Accept': 'application/json',
-            'Accept-Encoding': 'gzip',
-            'X-Subscription-Token': apiKey
-          }
-        });
-        
-        console.log('📊 Brave Direct Response Status:', response.status);
-        console.log('📊 Brave Direct Response OK:', response.ok);
-        
-        if (response.ok) {
-          const data = await response.json();
-          console.log('✅ Brave Direct Success!');
-          console.log('Results count:', data.web?.results?.length || 0);
-          
-          return {
-            results: this.formatBraveResults(data),
-            instantAnswer: null,
-            instantAnswerSource: null,
-            query: query,
-            provider: 'brave_search'
-          };
-        }
-      } catch (directError) {
-        console.log('❌ Direct Brave failed, trying proxy:', directError.message);
-      }
-      
-      // Fallback to proxy if direct fails
-      console.log('🔄 Trying CORS proxy...');
-      const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(braveUrl)}`;
-      console.log('🔗 Proxy URL:', proxyUrl);
-      
-      const proxyResponse = await fetch(proxyUrl, {
-        method: 'GET',
+      // Call our serverless function instead of Brave API directly
+      const response = await fetch(this.apiUrl, {
+        method: 'POST',
         headers: {
-          'Accept': 'application/json',
-          'X-Subscription-Token': apiKey
-        }
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          query: query,
+          location: options.location || null
+        })
       });
       
-      console.log('📊 Brave Proxy Response Status:', proxyResponse.status);
-      console.log('📊 Brave Proxy Response OK:', proxyResponse.ok);
+      console.log('📊 Serverless Response Status:', response.status);
+      console.log('📊 Serverless Response OK:', response.ok);
       
-      if (!proxyResponse.ok) {
-        throw new Error(`Brave Proxy HTTP ${proxyResponse.status}: ${proxyResponse.statusText}`);
+      if (!response.ok) {
+        const errorData = await response.json();
+        console.error('❌ Serverless Error:', errorData);
+        throw new Error(`Serverless error: ${errorData.error || response.statusText}`);
       }
       
-      const data = await proxyResponse.json();
-      console.log('✅ Brave Proxy Success!');
-      console.log('Results count:', data.web?.results?.length || 0);
+      const data = await response.json();
+      console.log('✅ Serverless Success!');
+      console.log('Results count:', data.results?.length || 0);
+      
+      if (!data.success) {
+        throw new Error(data.error || 'Serverless function failed');
+      }
       
       return {
-        results: this.formatBraveResults(data),
-        instantAnswer: null,
-        instantAnswerSource: null,
-        query: query,
-        provider: 'brave_search'
+        results: data.results || [],
+        instantAnswer: data.instantAnswer,
+        instantAnswerSource: data.instantAnswerSource,
+        query: data.query,
+        provider: data.provider || 'brave_search'
       };
       
     } catch (e) {
-      console.error('💥 Brave Search Error:', e);
+      console.error('💥 Serverless Function Error:', e);
       console.log('🔄 Falling back to DuckDuckGo due to error');
       // Fallback to DuckDuckGo
       return await this.fallbackToDuckDuckGo(query, options);
     }
-  }
-  
-  formatBraveResults(data) {
-    const results = [];
-    
-    if (data.web?.results) {
-      data.web.results.forEach(result => {
-        results.push({
-          title: result.title || 'No Title',
-          url: result.url || '',
-          snippet: result.description || 'No Description',
-          source: new URL(result.url || '').hostname || 'Unknown'
-        });
-      });
-    }
-    
-    console.log('🔍 Formatted Brave Results:', results.length, 'items');
-    return results;
   }
   
   async fallbackToDuckDuckGo(query, options) {
@@ -1409,6 +1351,106 @@ function saveSettings(){
   
   if(!e.textContent){closeSettings();}
 }
+// ── EMBEDDED SITES MANAGEMENT ─────────────────────────────
+let embeddedMode = null;
+const embeddedSites = {
+  ai: [
+    'https://www.perplexity.ai/',
+    'https://chat.openai.com/',
+    'https://claude.ai/',
+    'https://gemini.google.com/',
+    'https://poe.com/'
+  ],
+  search: [
+    'https://duckduckgo.com/',
+    'https://www.google.com/search',
+    'https://www.bing.com/',
+    'https://search.brave.com/'
+  ]
+};
+
+function showEmbedded(mode) {
+  const container = document.getElementById('embedded-container');
+  const iframe = document.getElementById('embedded-iframe');
+  const title = document.getElementById('embedded-title');
+  const main = document.querySelector('main');
+  
+  // Hide main content
+  main.classList.add('hidden');
+  
+  // Show embedded container
+  container.classList.remove('hidden');
+  
+  // Set title
+  title.textContent = mode === 'ai' ? 'AI Mode' : 'Search Mode';
+  
+  // Try to load the first site, with fallbacks
+  const sites = embeddedSites[mode];
+  let currentSiteIndex = 0;
+  
+  function loadSite(index) {
+    if (index >= sites.length) {
+      console.error('All embedded sites failed to load');
+      closeEmbedded();
+      return;
+    }
+    
+    const site = sites[index];
+    console.log(`📱 Trying to embed: ${site}`);
+    
+    // Set iframe source
+    iframe.src = site;
+    
+    // Check if iframe loads (with timeout)
+    setTimeout(() => {
+      try {
+        // Try to access iframe content to check if it loaded
+        const iframeDoc = iframe.contentDocument || iframe.contentWindow.document;
+        if (iframeDoc) {
+          console.log(`✅ Successfully embedded: ${site}`);
+          embeddedMode = mode;
+        } else {
+          throw new Error('Could not access iframe content');
+        }
+      } catch (e) {
+        console.warn(`❌ Failed to embed ${site}:`, e.message);
+        // Try next site
+        loadSite(index + 1);
+      }
+    }, 3000);
+  }
+  
+  // Start with first site
+  loadSite(0);
+}
+
+function closeEmbedded() {
+  const container = document.getElementById('embedded-container');
+  const iframe = document.getElementById('embedded-iframe');
+  const main = document.querySelector('main');
+  
+  // Hide embedded container
+  container.classList.add('hidden');
+  
+  // Show main content
+  main.classList.remove('hidden');
+  
+  // Clear iframe
+  iframe.src = '';
+  
+  embeddedMode = null;
+}
+
+function toggleMode(mode) {
+  console.log(`🔄 Switching to ${mode} mode`);
+  
+  if (mode === 'ai') {
+    showEmbedded('ai');
+  } else if (mode === 'search') {
+    showEmbedded('search');
+  }
+}
+
 // ── BOOT ──────────────────────────────────────────────────
 window.addEventListener('load',function boot(){
   aiKey=localStorage.getItem('ws_ai')||localStorage.getItem('ws_gemini')||'';
