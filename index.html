@@ -223,6 +223,10 @@
             flex: 1;
             border: none;
             background: white;
+            width: 100%;
+            height: 100%;
+            min-height: 600px;
+            border-radius: 8px;
         }
 
         /* Search Content */
@@ -515,11 +519,37 @@
             `;
             
             try {
-                // Use DuckDuckGo instant answer API (no CORS issues)
-                const response = await fetch(`https://api.duckduckgo.com/?q=${encodeURIComponent(query)}&format=json&pretty=1`);
-                const data = await response.json();
+                // Try multiple search APIs for better results
+                let data = null;
+                let source = '';
                 
-                displaySearchResults(data, query);
+                // Try SerpAPI first (more reliable)
+                try {
+                    const response = await fetch(`https://serpapi.com/search?q=${encodeURIComponent(query)}&api_key=demo`);
+                    if (response.ok) {
+                        data = await response.json();
+                        source = 'SerpAPI';
+                        console.log('✅ SerpAPI success');
+                    }
+                } catch (e) {
+                    console.log('SerpAPI failed, trying DuckDuckGo');
+                }
+                
+                // Fallback to DuckDuckGo if SerpAPI fails
+                if (!data) {
+                    const ddgResponse = await fetch(`https://api.duckduckgo.com/?q=${encodeURIComponent(query)}&format=json&pretty=1`);
+                    if (ddgResponse.ok) {
+                        data = await ddgResponse.json();
+                        source = 'DuckDuckGo';
+                        console.log('✅ DuckDuckGo success');
+                    }
+                }
+                
+                if (!data) {
+                    throw new Error('All search APIs failed');
+                }
+                
+                displaySearchResults(data, query, source);
                 
             } catch (error) {
                 console.error('Search failed:', error);
@@ -531,23 +561,37 @@
             }
         }
 
-        function displaySearchResults(data, query) {
+        function displaySearchResults(data, query, source = 'DuckDuckGo') {
             const resultsContainer = document.getElementById('search-results');
             const results = [];
             
-            // Abstract (instant answer)
-            if (data.Abstract) {
+            // Add source info
+            if (data.organic_results && Array.isArray(data.organic_results)) {
+                data.organic_results.slice(0, 8).forEach(result => {
+                    if (result.title && result.link) {
+                        results.push({
+                            title: result.title,
+                            url: result.link,
+                            description: result.snippet || 'No description available',
+                            type: 'web'
+                        });
+                    }
+                });
+            }
+            
+            // DuckDuckGo fallback
+            if (data.Abstract && data.AbstractURL) {
                 results.push({
                     title: data.Heading || 'Instant Answer',
-                    url: data.AbstractURL || '',
+                    url: data.AbstractURL,
                     description: data.Abstract,
                     type: 'instant'
                 });
             }
             
-            // Related topics
+            // Related topics (DuckDuckGo)
             if (data.RelatedTopics && Array.isArray(data.RelatedTopics)) {
-                data.RelatedTopics.slice(0, 8).forEach(topic => {
+                data.RelatedTopics.slice(0, 5).forEach(topic => {
                     if (topic.Text && topic.FirstURL) {
                         results.push({
                             title: topic.Text.split(' - ')[0] || topic.Text,
@@ -562,18 +606,19 @@
             if (results.length === 0) {
                 resultsContainer.innerHTML = `
                     <div class="loading">
-                        <p>No results found for "${query}"</p>
+                        <p>No results found for "${query}" (${source})</p>
                     </div>
                 `;
                 return;
             }
             
-            // Render results
+            // Render results with source indicator
             const resultsHTML = results.map(result => `
                 <div class="result-item" onclick="openResult('${result.url}')">
                     <div class="result-title">${result.title}</div>
                     ${result.url ? `<div class="result-url">${result.url}</div>` : ''}
                     <div class="result-description">${result.description}</div>
+                    <div class="result-source" style="font-size: 0.75rem; color: var(--text-tertiary); margin-top: 0.5rem;">Source: ${source}</div>
                 </div>
             `).join('');
             
