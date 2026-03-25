@@ -1240,14 +1240,18 @@ function loadPendingImages(){
 
 // ── UI HELPERS ────────────────────────────────────────────
 function setMode(m){
+  console.log(`🔄 setMode called with: ${m}`);
+  
   mode=m;
   document.getElementById('btn-ai').classList.toggle('active',m==='ai');
   document.getElementById('btn-search').classList.toggle('active',m==='search');
   
-  // Use embedded functionality
+  // Use embedded functionality - this should override everything else
   if (m === 'ai') {
+    console.log('🤖 Activating AI embedded mode');
     showEmbedded('ai');
   } else if (m === 'search') {
+    console.log('🔍 Activating Search embedded mode');
     showEmbedded('search');
   }
   
@@ -1370,23 +1374,26 @@ const embeddedSites = {
     'https://poe.com/'
   ],
   search: [
+    'https://www.startpage.com/',
     'https://duckduckgo.com/',
-    'https://www.google.com/search',
-    'https://www.bing.com/',
-    'https://search.brave.com/'
+    'https://www.qwant.com/',
+    'https://search.brave.com/',
+    'https://www.ecosia.org/'
   ]
 };
 
 function showEmbedded(mode) {
+  console.log(`📱 showEmbedded called with mode: ${mode}`);
+  
   const container = document.getElementById('embedded-container');
   const iframe = document.getElementById('embedded-iframe');
   const title = document.getElementById('embedded-title');
   const main = document.querySelector('main');
   
-  // Hide main content
+  // Hide main content immediately
   main.classList.add('hidden');
   
-  // Show embedded container
+  // Show embedded container immediately
   container.classList.remove('hidden');
   
   // Set title
@@ -1394,17 +1401,30 @@ function showEmbedded(mode) {
   
   // Try to load the first site, with fallbacks
   const sites = embeddedSites[mode];
-  let currentSiteIndex = 0;
+  console.log(`🌐 Available sites for ${mode}:`, sites);
   
   function loadSite(index) {
     if (index >= sites.length) {
-      console.error('All embedded sites failed to load');
-      closeEmbedded();
+      console.error('❌ All embedded sites failed to load');
+      // Show error message instead of closing
+      iframe.style.display = 'none';
+      const contentDiv = document.getElementById('embedded-content');
+      contentDiv.innerHTML = `
+        <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; color: #fff; text-align: center; padding: 2rem;">
+          <h3>Unable to load embedded sites</h3>
+          <p>All ${mode} sites blocked embedding.</p>
+          <p>Please use the close button and try a different approach.</p>
+        </div>
+      `;
       return;
     }
     
     const site = sites[index];
     console.log(`📱 Trying to embed: ${site}`);
+    
+    // Clear iframe and show loading
+    iframe.style.display = 'block';
+    iframe.src = 'about:blank';
     
     // Set iframe source
     iframe.src = site;
@@ -1414,7 +1434,7 @@ function showEmbedded(mode) {
       try {
         // Try to access iframe content to check if it loaded
         const iframeDoc = iframe.contentDocument || iframe.contentWindow.document;
-        if (iframeDoc) {
+        if (iframeDoc && iframeDoc.body) {
           console.log(`✅ Successfully embedded: ${site}`);
           embeddedMode = mode;
         } else {
@@ -1425,7 +1445,7 @@ function showEmbedded(mode) {
         // Try next site
         loadSite(index + 1);
       }
-    }, 3000);
+    }, 2000);
   }
   
   // Start with first site
