@@ -15,79 +15,137 @@
         }
 
         :root {
-            --bg-primary: #0a0a0a;
+            --bg-primary: #0f0f0f;
             --bg-secondary: #1a1a1a;
-            --bg-tertiary: #2a2a2a;
+            --bg-tertiary: #252525;
+            --bg-card: #1e1e1e;
             --text-primary: #ffffff;
-            --text-secondary: #a0a0a0;
-            --text-tertiary: #808080;
-            --accent: #3b82f6;
-            --accent-hover: #2563eb;
-            --border: #333333;
-            --shadow: rgba(0, 0, 0, 0.3);
+            --text-secondary: #b0b0b0;
+            --text-tertiary: #6b7280;
+            --accent: #6366f1;
+            --accent-hover: #4f46e5;
+            --accent-glow: rgba(99, 102, 241, 0.1);
+            --border: #2a2a2a;
+            --shadow: rgba(0, 0, 0, 0.4);
+            --shadow-strong: rgba(0, 0, 0, 0.6);
+            --gradient-1: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            --gradient-2: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            --gradient-bg: linear-gradient(135deg, #0f0f0f 0%, #1a1a1a 100%);
         }
 
         body {
             font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            background: var(--bg-primary);
+            background: var(--gradient-bg);
             color: var(--text-primary);
             height: 100vh;
             overflow: hidden;
             display: flex;
             flex-direction: column;
+            backdrop-filter: blur(10px);
         }
 
         /* Header */
         .header {
-            background: var(--bg-secondary);
-            border-bottom: 1px solid var(--border);
-            padding: 1rem 2rem;
+            background: rgba(30, 30, 30, 0.8);
+            backdrop-filter: blur(20px);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            padding: 1.5rem 2rem;
             display: flex;
             align-items: center;
             justify-content: space-between;
-            box-shadow: 0 2px 10px var(--shadow);
+            box-shadow: 0 8px 32px var(--shadow-strong);
             z-index: 100;
+            position: relative;
+        }
+
+        .header::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: var(--gradient-1);
+            opacity: 0.1;
+            z-index: -1;
         }
 
         .logo {
-            font-size: 1.5rem;
-            font-weight: 700;
-            background: linear-gradient(135deg, var(--accent), #60a5fa);
+            font-size: 1.8rem;
+            font-weight: 800;
+            background: var(--gradient-1);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             background-clip: text;
+            letter-spacing: -0.02em;
+            text-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
+            transition: all 0.3s ease;
+        }
+
+        .logo:hover {
+            transform: translateY(-2px);
+            text-shadow: 0 6px 16px rgba(99, 102, 241, 0.4);
         }
 
         /* Mode Switcher */
         .mode-switcher {
             display: flex;
-            background: var(--bg-tertiary);
-            border-radius: 12px;
-            padding: 4px;
-            border: 1px solid var(--border);
+            background: rgba(37, 37, 37, 0.6);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 6px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 4px 16px var(--shadow-strong);
         }
 
         .mode-btn {
-            padding: 0.75rem 1.5rem;
+            padding: 0.8rem 1.8rem;
             border: none;
-            background: transparent;
+            background: rgba(255, 255, 255, 0.05);
             color: var(--text-secondary);
-            font-weight: 500;
-            border-radius: 8px;
+            font-weight: 600;
+            border-radius: 16px;
             cursor: pointer;
-            transition: all 0.3s ease;
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
             font-size: 0.9rem;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .mode-btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: var(--gradient-2);
+            opacity: 0;
+            transition: opacity 0.4s ease;
+            z-index: -1;
         }
 
         .mode-btn:hover {
-            background: var(--bg-secondary);
+            background: rgba(255, 255, 255, 0.1);
             color: var(--text-primary);
+            transform: translateY(-2px);
+            box-shadow: 0 8px 24px rgba(99, 102, 241, 0.2);
+        }
+
+        .mode-btn:hover::before {
+            opacity: 0.1;
         }
 
         .mode-btn.active {
-            background: var(--accent);
+            background: var(--gradient-1);
             color: white;
-            box-shadow: 0 2px 8px rgba(59, 130, 246, 0.3);
+            box-shadow: 0 8px 32px rgba(99, 102, 241, 0.4);
+            transform: scale(1.05);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .mode-btn.active::before {
+            opacity: 0.15;
         }
 
         /* Main Content */
@@ -328,8 +386,9 @@
                     <div class="ai-title">AI Assistant</div>
                     <div class="ai-selector">
                         <div class="ai-option active" onclick="switchAI('perplexity')">Perplexity</div>
-                        <div class="ai-option" onclick="switchAI('chatgpt')">ChatGPT</div>
-                        <div class="ai-option" onclick="switchAI('claude')">Claude</div>
+                        <div class="ai-option" onclick="switchAI('poe')">Poe</div>
+                        <div class="ai-option" onclick="switchAI('characterai')">Character.AI</div>
+                        <div class="ai-option" onclick="switchAI('flowgpt')">FlowGPT</div>
                     </div>
                 </div>
                 <iframe class="ai-iframe" id="ai-iframe" src="https://www.perplexity.ai/"></iframe>
@@ -364,11 +423,13 @@
         let currentAI = 'perplexity';
         let searchTimeout = null;
 
-        // AI Sites
+        // AI Sites - more embeddable alternatives
         const aiSites = {
             perplexity: 'https://www.perplexity.ai/',
-            chatgpt: 'https://chat.openai.com/',
-            claude: 'https://claude.ai/'
+            poe: 'https://poe.com/',
+            characterai: 'https://character.ai/',
+            flowgpt: 'https://flowgpt.com/',
+            youcom: 'https://you.com/'
         };
 
         // Initialize
