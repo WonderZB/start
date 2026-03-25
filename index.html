@@ -355,8 +355,8 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'DM San
     </svg>
   </button>
   <div class="modes">
-    <div class="mode-btn active" id="ai-mode" onclick="toggleMode('ai')">AI</div>
-    <div class="mode-btn" id="search-mode" onclick="toggleMode('search')">Search</div>
+    <div class="mode-btn active" id="btn-ai" onclick="setMode('ai')">AI</div>
+    <div class="mode-btn" id="btn-search" onclick="setMode('search')">Search</div>
   </div>
   <button id="settings-btn" onclick="openSettings()">
     <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24">
@@ -1243,6 +1243,14 @@ function setMode(m){
   mode=m;
   document.getElementById('btn-ai').classList.toggle('active',m==='ai');
   document.getElementById('btn-search').classList.toggle('active',m==='search');
+  
+  // Use embedded functionality
+  if (m === 'ai') {
+    showEmbedded('ai');
+  } else if (m === 'search') {
+    showEmbedded('search');
+  }
+  
   document.getElementById('query').placeholder=m==='ai'?'Ask anything…':'Search the web…';
   // Focus on desktop only (not mobile)
   if(window.innerWidth>768){
